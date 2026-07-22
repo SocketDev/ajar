@@ -133,6 +133,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         modeItem.target = self
         menu.addItem(modeItem)
 
+        let loginItem = NSMenuItem(
+            title: "Launch at Login",
+            action: #selector(toggleLaunchAtLogin),
+            keyEquivalent: ""
+        )
+        loginItem.target = self
+        loginItem.state = LaunchAtLogin.isEnabled ? .on : .off
+        menu.addItem(loginItem)
+
         menu.addItem(.separator())
         let quit = NSMenuItem(
             title: "Quit Ajar",
@@ -152,5 +161,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func toggleMode() {
         model.setMode(model.mode == .always ? .whileAgentsWork : .always)
+    }
+
+    @objc private func toggleLaunchAtLogin() {
+        LaunchAtLogin.toggle()
     }
 }
