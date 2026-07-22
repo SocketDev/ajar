@@ -70,7 +70,9 @@ pub enum Command {
 pub enum Reply {
     Ok,
     /// `STATUS` answer: whether the hold is held right now.
-    Status { held: bool },
+    Status {
+        held: bool,
+    },
     Err(String),
 }
 
@@ -133,7 +135,9 @@ pub fn apply(lease: &mut Lease, cmd: Command, now_ms: u64) -> Reply {
             Reply::Ok
         }
         Command::Ping => Reply::Ok,
-        Command::Status => Reply::Status { held: lease.is_held(now_ms) },
+        Command::Status => Reply::Status {
+            held: lease.is_held(now_ms),
+        },
     }
 }
 
@@ -193,9 +197,18 @@ mod tests {
     #[test]
     fn apply_drives_the_lease() {
         let mut l = Lease::new();
-        assert_eq!(apply(&mut l, Command::Engage { ttl_ms: 5_000 }, 0), Reply::Ok);
-        assert_eq!(apply(&mut l, Command::Status, 1_000), Reply::Status { held: true });
-        assert_eq!(apply(&mut l, Command::Status, 6_000), Reply::Status { held: false });
+        assert_eq!(
+            apply(&mut l, Command::Engage { ttl_ms: 5_000 }, 0),
+            Reply::Ok
+        );
+        assert_eq!(
+            apply(&mut l, Command::Status, 1_000),
+            Reply::Status { held: true }
+        );
+        assert_eq!(
+            apply(&mut l, Command::Status, 6_000),
+            Reply::Status { held: false }
+        );
         assert_eq!(apply(&mut l, Command::Release, 0), Reply::Ok);
     }
 }

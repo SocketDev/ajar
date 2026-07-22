@@ -63,8 +63,10 @@ impl Registry {
     /// Only meaningful for process-tracked agents; a hook-tracked agent's
     /// liveness is ignored here (its hooks are authoritative).
     pub fn observe_processes(&mut self, alive: impl IntoIterator<Item = Agent>) {
-        self.processes =
-            alive.into_iter().filter(|a| a.tracking() == Tracking::Process).collect();
+        self.processes = alive
+            .into_iter()
+            .filter(|a| a.tracking() == Tracking::Process)
+            .collect();
     }
 
     /// Whether a specific agent has any working session right now.
@@ -83,7 +85,11 @@ impl Registry {
 
     /// The set of enabled agents currently working (drives the UI list).
     pub fn working_agents(&self) -> Vec<Agent> {
-        Agent::ALL.iter().copied().filter(|a| self.is_working(*a)).collect()
+        Agent::ALL
+            .iter()
+            .copied()
+            .filter(|a| self.is_working(*a))
+            .collect()
     }
 
     /// Count of enabled agents working — the wake engine's `agents_working`.

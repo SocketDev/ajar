@@ -38,7 +38,12 @@ pub struct Engine {
 
 impl Engine {
     pub fn new(controller: Box<dyn WakeController>, mode: KeepAwake, guards: Guards) -> Self {
-        Self { controller, mode, guards, status: Status::Idle }
+        Self {
+            controller,
+            mode,
+            guards,
+            status: Status::Idle,
+        }
     }
 
     pub fn set_mode(&mut self, mode: KeepAwake) {
@@ -136,13 +141,21 @@ mod tests {
     }
 
     fn ac() -> Power {
-        Power { battery: 1.0, on_ac: true, low_power_mode: false, thermal_hot: false }
+        Power {
+            battery: 1.0,
+            on_ac: true,
+            low_power_mode: false,
+            thermal_hot: false,
+        }
     }
 
     #[test]
     fn holds_only_while_an_agent_works() {
-        let mut e =
-            Engine::new(Box::<FakeCtl>::default(), KeepAwake::WhileAgentsWork, Guards::default());
+        let mut e = Engine::new(
+            Box::<FakeCtl>::default(),
+            KeepAwake::WhileAgentsWork,
+            Guards::default(),
+        );
         assert_eq!(e.tick(0, ac()), Status::Idle);
         assert_eq!(e.tick(1, ac()), Status::Awake);
         assert_eq!(e.tick(3, ac()), Status::Awake); // still one hold, no re-engage
@@ -151,9 +164,15 @@ mod tests {
 
     #[test]
     fn guardrail_overrides_the_hold() {
-        let mut e =
-            Engine::new(Box::<FakeCtl>::default(), KeepAwake::WhileAgentsWork, Guards::default());
-        let hot = Power { thermal_hot: true, ..ac() };
+        let mut e = Engine::new(
+            Box::<FakeCtl>::default(),
+            KeepAwake::WhileAgentsWork,
+            Guards::default(),
+        );
+        let hot = Power {
+            thermal_hot: true,
+            ..ac()
+        };
         assert_eq!(e.tick(1, hot), Status::Blocked(Blocked::Thermal));
         assert!(!e.is_awake());
         // Cools down → re-engages.
@@ -162,9 +181,17 @@ mod tests {
 
     #[test]
     fn always_mode_still_respects_guards() {
-        let mut e = Engine::new(Box::<FakeCtl>::default(), KeepAwake::Always, Guards::default());
+        let mut e = Engine::new(
+            Box::<FakeCtl>::default(),
+            KeepAwake::Always,
+            Guards::default(),
+        );
         assert_eq!(e.tick(0, ac()), Status::Awake); // holds with zero agents
-        let on_batt_low = Power { battery: 0.05, on_ac: false, ..ac() };
+        let on_batt_low = Power {
+            battery: 0.05,
+            on_ac: false,
+            ..ac()
+        };
         assert_eq!(e.tick(0, on_batt_low), Status::Blocked(Blocked::BatteryLow));
     }
 }

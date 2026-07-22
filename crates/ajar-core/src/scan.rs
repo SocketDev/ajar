@@ -44,7 +44,9 @@ fn process_list_command() -> std::io::Result<std::process::Output> {
 #[cfg(windows)]
 fn process_list_command() -> std::io::Result<std::process::Output> {
     // CSV, no header: `"name.exe","pid",...` per line.
-    Command::new("tasklist").args(["/FO", "CSV", "/NH"]).output()
+    Command::new("tasklist")
+        .args(["/FO", "CSV", "/NH"])
+        .output()
 }
 
 /// Parse the platform process listing into bare executable names. Split out so
@@ -63,7 +65,10 @@ fn exe_basename(line: &str) -> Option<String> {
     }
     // Windows CSV: take the first quoted field.
     let first = if line.starts_with('"') {
-        line.trim_start_matches('"').split('"').next().unwrap_or(line)
+        line.trim_start_matches('"')
+            .split('"')
+            .next()
+            .unwrap_or(line)
     } else {
         line
     };

@@ -121,7 +121,9 @@ mod macos {
 
     fn set_disablesleep(disable: bool) {
         let val = if disable { "1" } else { "0" };
-        let status = Proc::new("/usr/bin/pmset").args(["-a", "disablesleep", val]).status();
+        let status = Proc::new("/usr/bin/pmset")
+            .args(["-a", "disablesleep", val])
+            .status();
         if let Err(e) = status {
             eprintln!("ajar-helper: pmset disablesleep {val} failed: {e}");
         }

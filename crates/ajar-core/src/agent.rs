@@ -142,7 +142,10 @@ impl Agent {
 /// Precedence: the cross-agent `AI_AGENT` override, then per-tool signals, then
 /// PATH/EDITOR/TERM_PROGRAM heuristics — matching std-env's `detectAgent()`.
 pub fn detect_agent_from_env() -> Option<Agent> {
-    if let Some(a) = env::var("AI_AGENT").ok().and_then(|v| classify_ai_agent(&v)) {
+    if let Some(a) = env::var("AI_AGENT")
+        .ok()
+        .and_then(|v| classify_ai_agent(&v))
+    {
         return Some(a);
     }
     if is_set("CLAUDECODE") || is_set("CLAUDE_CODE") {

@@ -93,7 +93,12 @@ mod tests {
     use super::*;
 
     fn ac() -> Power {
-        Power { battery: 1.0, on_ac: true, low_power_mode: false, thermal_hot: false }
+        Power {
+            battery: 1.0,
+            on_ac: true,
+            low_power_mode: false,
+            thermal_hot: false,
+        }
     }
 
     #[test]
@@ -107,21 +112,34 @@ mod tests {
     #[test]
     fn low_battery_on_battery_blocks() {
         let g = Guards::default();
-        let p = Power { battery: 0.10, on_ac: false, ..ac() };
+        let p = Power {
+            battery: 0.10,
+            on_ac: false,
+            ..ac()
+        };
         assert_eq!(g.block(p), Some(Blocked::BatteryLow));
     }
 
     #[test]
     fn plugged_in_only_blocks_on_battery() {
-        let g = Guards { plugged_in_only: true, ..Guards::default() };
-        let p = Power { on_ac: false, ..ac() };
+        let g = Guards {
+            plugged_in_only: true,
+            ..Guards::default()
+        };
+        let p = Power {
+            on_ac: false,
+            ..ac()
+        };
         assert_eq!(g.block(p), Some(Blocked::OnBattery));
     }
 
     #[test]
     fn thermal_hot_blocks_even_on_ac() {
         let g = Guards::default();
-        let p = Power { thermal_hot: true, ..ac() };
+        let p = Power {
+            thermal_hot: true,
+            ..ac()
+        };
         assert_eq!(g.block(p), Some(Blocked::Thermal));
     }
 }
