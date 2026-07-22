@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  launchd daemon for the ajar privileged helper (macOS).
+
+  Installed to /Library/LaunchDaemons/ and the binary to
+  /Library/PrivilegedHelperTools/ — in M3 the native app registers this via
+  SMAppService (one-time admin approval); for M1 it can be hand-installed:
+
+    sudo cp target/release/ajar-helper /Library/PrivilegedHelperTools/com.socketdev.ajar-helper
+    sudo cp crates/ajar-helper/com.socketdev.ajar-helper.plist /Library/LaunchDaemons/
+    sudo launchctl load /Library/LaunchDaemons/com.socketdev.ajar-helper.plist
+
+  KeepAlive restarts the daemon if it dies; its start-up baseline re-enables
+  sleep, so a crash can never strand a closed-lid Mac awake.
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.socketdev.ajar-helper</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Library/PrivilegedHelperTools/com.socketdev.ajar-helper</string>
+  </array>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>ProcessType</key>
+  <string>Background</string>
+</dict>
+</plist>

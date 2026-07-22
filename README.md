@@ -82,10 +82,11 @@ thermal / process state and feeds the engine on a timer.
 
 ## Roadmap
 
-- **M0** — core: agent detection, wake trait + macOS idle hold, guard + engine ← _here_
-- **M1** — macOS privileged helper (lid-closed) + Claude Code / Codex / OpenCode hook install + ping socket
+- **M0** — core: agent detection, wake trait + macOS idle hold, guard + engine ✅
+- **M1a** — macOS privileged helper: `pmset disablesleep` as a heartbeat lease (lid-closed hold) + self-renewing `PmsetHelper` backend ✅
+- **M1b** — Claude Code / Codex / OpenCode lifecycle-hook install + ping socket + process scan (per-session Working/Idle) ← _next_
 - **M2** — Linux (`logind`) + Windows (`powercfg`) wake backends
-- **M3** — native menu-bar / tray shells + settings (General · Agents · Power & Display · Notifications)
+- **M3** — native menu-bar / tray shells + settings (General · Agents · Power & Display · Notifications) + SMAppService helper install
 - **M4** — display-off control, notification chimes, global shortcut, auto-update
 
 ## License

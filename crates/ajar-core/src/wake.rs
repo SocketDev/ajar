@@ -41,11 +41,17 @@ pub trait WakeController: Send {
     fn lid_capability(&self) -> LidCapability;
 }
 
-/// The wake controller for the current platform.
+/// The wake controller for the current platform. On macOS this prefers the
+/// privileged helper (true lid-closed hold) and falls back to `caffeinate`
+/// (idle-only) when the helper isn't installed yet.
 pub fn controller() -> Box<dyn WakeController> {
     #[cfg(target_os = "macos")]
     {
-        Box::new(macos::Caffeinate::new())
+        if macos::PmsetHelper::is_available() {
+            Box::new(macos::PmsetHelper::new())
+        } else {
+            Box::new(macos::Caffeinate::new())
+        }
     }
     #[cfg(not(target_os = "macos"))]
     {
@@ -111,6 +117,102 @@ mod macos {
         fn drop(&mut self) {
             self.release();
         }
+    }
+
+    use std::io::Write;
+    use std::os::unix::net::UnixStream;
+    use std::path::Path;
+    use std::sync::atomic::{AtomicBool, Ordering};
+    use std::sync::Arc;
+    use std::thread::{self, JoinHandle};
+    use std::time::Duration;
+
+    const HELPER_SOCK: &str = "/var/run/com.socketdev.ajar-helper.sock";
+    /// Lease TTL sent to the helper. Must exceed the renew interval with margin
+    /// so a single dropped renewal doesn't lapse the hold.
+    const LEASE_TTL_MS: u64 = 15_000;
+    const RENEW_MS: u64 = 6_000;
+
+    /// The true lid-closed backend: leases `pmset disablesleep` through the
+    /// privileged helper. A background thread renews the lease every
+    /// [`RENEW_MS`] so the hold survives regardless of the engine's tick
+    /// cadence; if ajar dies the lease lapses and the helper re-enables sleep.
+    pub struct PmsetHelper {
+        engaged: Arc<AtomicBool>,
+        worker: Option<JoinHandle<()>>,
+    }
+
+    impl PmsetHelper {
+        /// The helper is installed + listening.
+        pub fn is_available() -> bool {
+            Path::new(HELPER_SOCK).exists()
+        }
+
+        pub fn new() -> Self {
+            Self { engaged: Arc::new(AtomicBool::new(false)), worker: None }
+        }
+    }
+
+    impl WakeController for PmsetHelper {
+        fn engage(&mut self, _reason: &str) -> io::Result<()> {
+            if self.engaged.load(Ordering::SeqCst) {
+                return Ok(());
+            }
+            // Verify the helper is reachable before claiming the hold.
+            send_command(&format!("ENGAGE {LEASE_TTL_MS}"))?;
+            self.engaged.store(true, Ordering::SeqCst);
+            let engaged = Arc::clone(&self.engaged);
+            self.worker = Some(thread::spawn(move || {
+                while engaged.load(Ordering::SeqCst) {
+                    thread::sleep(Duration::from_millis(RENEW_MS));
+                    if !engaged.load(Ordering::SeqCst) {
+                        break;
+                    }
+                    // A dropped renewal is non-fatal: the lease TTL leaves slack
+                    // and the next tick retries.
+                    let _ = send_command(&format!("ENGAGE {LEASE_TTL_MS}"));
+                }
+            }));
+            Ok(())
+        }
+
+        fn release(&mut self) {
+            if !self.engaged.swap(false, Ordering::SeqCst) {
+                return;
+            }
+            if let Some(worker) = self.worker.take() {
+                let _ = worker.join();
+            }
+            let _ = send_command("RELEASE");
+        }
+
+        fn is_engaged(&self) -> bool {
+            self.engaged.load(Ordering::SeqCst)
+        }
+
+        fn lid_capability(&self) -> LidCapability {
+            // `pmset disablesleep` is Full on Intel but Apple Silicon's clamshell
+            // sensor can still force sleep in edge cases — report honestly.
+            LidCapability::Partial
+        }
+    }
+
+    impl Drop for PmsetHelper {
+        fn drop(&mut self) {
+            self.release();
+        }
+    }
+
+    /// Send one line to the helper and wait for its reply. Connect-per-command
+    /// keeps the client stateless; the helper's lease carries the state.
+    fn send_command(cmd: &str) -> io::Result<()> {
+        let mut stream = UnixStream::connect(HELPER_SOCK)?;
+        stream.set_read_timeout(Some(Duration::from_secs(2)))?;
+        stream.set_write_timeout(Some(Duration::from_secs(2)))?;
+        stream.write_all(cmd.as_bytes())?;
+        stream.write_all(b"\n")?;
+        stream.flush()?;
+        Ok(())
     }
 }
 

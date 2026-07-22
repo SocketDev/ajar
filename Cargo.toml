@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/ajar-core"]
+members = ["crates/ajar-core", "crates/ajar-helper"]
 
 [workspace.package]
 edition = "2021"
