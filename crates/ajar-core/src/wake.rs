@@ -53,7 +53,15 @@ pub fn controller() -> Box<dyn WakeController> {
             Box::new(macos::Caffeinate::new())
         }
     }
-    #[cfg(not(target_os = "macos"))]
+    #[cfg(target_os = "linux")]
+    {
+        Box::new(linux::Inhibitor::new())
+    }
+    #[cfg(target_os = "windows")]
+    {
+        Box::new(windows::PowerHold::new())
+    }
+    #[cfg(not(any(target_os = "macos", target_os = "linux", target_os = "windows")))]
     {
         Box::new(unsupported::Unsupported)
     }
@@ -149,7 +157,10 @@ mod macos {
         }
 
         pub fn new() -> Self {
-            Self { engaged: Arc::new(AtomicBool::new(false)), worker: None }
+            Self {
+                engaged: Arc::new(AtomicBool::new(false)),
+                worker: None,
+            }
         }
     }
 
@@ -216,14 +227,160 @@ mod macos {
     }
 }
 
-#[cfg(not(target_os = "macos"))]
+#[cfg(target_os = "linux")]
+mod linux {
+    use super::{LidCapability, WakeController};
+    use std::io;
+    use std::process::{Child, Command};
+
+    /// Linux backend: holds a systemd-logind inhibitor lock over
+    /// `sleep:idle:handle-lid-switch` in `block` mode by keeping a
+    /// `systemd-inhibit … sleep infinity` child alive. Killing the child drops
+    /// the lock, so a crash always lets the machine sleep again. Blocking
+    /// `handle-lid-switch` is what survives a closed lid — Full on Linux.
+    pub struct Inhibitor {
+        child: Option<Child>,
+    }
+
+    impl Inhibitor {
+        pub fn new() -> Self {
+            Self { child: None }
+        }
+    }
+
+    impl WakeController for Inhibitor {
+        fn engage(&mut self, reason: &str) -> io::Result<()> {
+            if self.child.is_some() {
+                return Ok(());
+            }
+            let child = Command::new("systemd-inhibit")
+                .arg("--what=sleep:idle:handle-lid-switch")
+                .arg("--who=ajar")
+                .arg(format!("--why={reason}"))
+                .arg("--mode=block")
+                .args(["sleep", "infinity"])
+                .spawn()?;
+            self.child = Some(child);
+            Ok(())
+        }
+
+        fn release(&mut self) {
+            if let Some(mut child) = self.child.take() {
+                let _ = child.kill();
+                let _ = child.wait();
+            }
+        }
+
+        fn is_engaged(&self) -> bool {
+            self.child.is_some()
+        }
+
+        fn lid_capability(&self) -> LidCapability {
+            LidCapability::Full
+        }
+    }
+
+    impl Drop for Inhibitor {
+        fn drop(&mut self) {
+            self.release();
+        }
+    }
+}
+
+#[cfg(target_os = "windows")]
+mod windows {
+    use super::{LidCapability, WakeController};
+    use std::io;
+    use std::process::Command;
+
+    type ExecutionState = u32;
+    const ES_CONTINUOUS: ExecutionState = 0x8000_0000;
+    const ES_SYSTEM_REQUIRED: ExecutionState = 0x0000_0001;
+
+    extern "system" {
+        fn SetThreadExecutionState(es_flags: ExecutionState) -> ExecutionState;
+    }
+
+    /// Windows backend: `SetThreadExecutionState` keeps the system out of idle
+    /// sleep, and the active power scheme's lid-close action is set to "do
+    /// nothing" while engaged (restored to sleep on release) so a closed lid
+    /// stays awake — Full on Windows. Save/restore of a non-default prior lid
+    /// action is an M3 refinement.
+    pub struct PowerHold {
+        engaged: bool,
+    }
+
+    impl PowerHold {
+        pub fn new() -> Self {
+            Self { engaged: false }
+        }
+
+        /// GUID_SYSTEM_BUTTON_SUBGROUP / lid-close-action. Index 0 = "do
+        /// nothing", 1 = "sleep".
+        fn set_lid_action(index: &str) {
+            for domain in ["/setacvalueindex", "/setdcvalueindex"] {
+                let _ = Command::new("powercfg")
+                    .args([
+                        domain,
+                        "SCHEME_CURRENT",
+                        "4f971e89-eebd-4455-a8de-9e59040e7347", // SUB_BUTTONS
+                        "5ca83367-6e45-459f-a27b-476b1d01c936", // LIDACTION
+                        index,
+                    ])
+                    .status();
+            }
+            let _ = Command::new("powercfg")
+                .args(["/setactive", "SCHEME_CURRENT"])
+                .status();
+        }
+    }
+
+    impl WakeController for PowerHold {
+        fn engage(&mut self, _reason: &str) -> io::Result<()> {
+            // SAFETY: FFI to kernel32; the flags are a valid EXECUTION_STATE
+            // bitmask and the call has no memory effects.
+            unsafe {
+                SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED);
+            }
+            Self::set_lid_action("0");
+            self.engaged = true;
+            Ok(())
+        }
+
+        fn release(&mut self) {
+            // SAFETY: as above — clears the continuous requirement.
+            unsafe {
+                SetThreadExecutionState(ES_CONTINUOUS);
+            }
+            Self::set_lid_action("1");
+            self.engaged = false;
+        }
+
+        fn is_engaged(&self) -> bool {
+            self.engaged
+        }
+
+        fn lid_capability(&self) -> LidCapability {
+            LidCapability::Full
+        }
+    }
+
+    impl Drop for PowerHold {
+        fn drop(&mut self) {
+            if self.engaged {
+                self.release();
+            }
+        }
+    }
+}
+
+#[cfg(not(any(target_os = "macos", target_os = "linux", target_os = "windows")))]
 mod unsupported {
     use super::{LidCapability, WakeController};
     use std::io;
 
-    /// Placeholder until the Linux (`logind` Inhibit) and Windows (`powercfg`
-    /// lid-action) backends land in M2. Reports `Unsupported` so the UI never
-    /// claims a hold it cannot keep.
+    /// Fallback for platforms without a wake backend. Reports `Unsupported` so
+    /// the UI never claims a hold it cannot keep.
     pub struct Unsupported;
 
     impl WakeController for Unsupported {
