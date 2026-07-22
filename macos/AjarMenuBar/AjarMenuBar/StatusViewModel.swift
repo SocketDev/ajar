@@ -24,10 +24,16 @@ final class StatusViewModel {
     var mode: Mode = .whileAgentsWork
     var battery: Double = 1.0
     var onAC: Bool = true
+    var notifyOnFinish: Bool = StatusViewModel.loadNotifyOnFinish() {
+        didSet { UserDefaults.standard.set(notifyOnFinish, forKey: StatusViewModel.notifyKey) }
+    }
 
+    private static let notifyKey = "ajar.notifyOnFinish"
     private let client = AjarClient()
     private var powerTask: Task<Void, Never>?
     private var started = false
+    /// Working-agent labels from the previous status, to detect finishes.
+    private var previousWorking: Set<String> = []
 
     /// How often to re-sample battery/thermal and forward it to the runtime.
     private let powerInterval: TimeInterval = 15
@@ -36,11 +42,31 @@ final class StatusViewModel {
     func start() {
         guard !started else { return }
         started = true
+        Notifier.requestAuthorization()
         client.start { [weak self] status in
-            self?.status = status
+            self?.handleStatusUpdate(status)
         }
         sendPower()   // prime the runtime before the first timer tick
         startPowerSampling()
+    }
+
+    /// Fold a status line into observable state and fire a finish notification
+    /// for any agent that dropped out of the working set since the last update.
+    private func handleStatusUpdate(_ next: AjarStatus) {
+        let current = Set(next.agents)
+        if notifyOnFinish {
+            for label in previousWorking.subtracting(current).sorted() {
+                Notifier.notifyFinished(label, remaining: current.count)
+            }
+        }
+        previousWorking = current
+        status = next
+    }
+
+    private static func loadNotifyOnFinish() -> Bool {
+        UserDefaults.standard.object(forKey: notifyKey) == nil
+            ? true
+            : UserDefaults.standard.bool(forKey: notifyKey)
     }
 
     func setMode(_ mode: Mode) {

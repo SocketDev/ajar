@@ -142,6 +142,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         loginItem.state = LaunchAtLogin.isEnabled ? .on : .off
         menu.addItem(loginItem)
 
+        let notifyItem = NSMenuItem(
+            title: "Notify when agents finish",
+            action: #selector(toggleNotifyOnFinish),
+            keyEquivalent: ""
+        )
+        notifyItem.target = self
+        notifyItem.state = model.notifyOnFinish ? .on : .off
+        menu.addItem(notifyItem)
+
         menu.addItem(.separator())
         let quit = NSMenuItem(
             title: "Quit Ajar",
@@ -165,5 +174,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func toggleLaunchAtLogin() {
         LaunchAtLogin.toggle()
+    }
+
+    @objc private func toggleNotifyOnFinish() {
+        model.notifyOnFinish.toggle()
     }
 }
