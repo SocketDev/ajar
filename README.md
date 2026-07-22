@@ -84,9 +84,10 @@ thermal / process state and feeds the engine on a timer.
 
 - **M0** — core: agent detection, wake trait + macOS idle hold, guard + engine ✅
 - **M1a** — macOS privileged helper: `pmset disablesleep` as a heartbeat lease (lid-closed hold) + self-renewing `PmsetHelper` backend ✅
-- **M1b** — Claude Code / Codex / OpenCode lifecycle-hook install + ping socket + process scan (per-session Working/Idle) ← _next_
-- **M2** — Linux (`logind`) + Windows (`powercfg`) wake backends
-- **M3** — native menu-bar / tray shells + settings (General · Agents · Power & Display · Notifications) + SMAppService helper install
+- **M1b** — agent registry (per-session Working/Idle) + zero-dep process scan ✅
+- **M1b-2** — ping protocol + loopback socket server + `ajar-hook` (report command + Claude Code `settings.json` installer) ✅
+- **M2** — Linux (`logind`) + Windows (`powercfg`) wake backends + cross-platform CI ✅
+- **M3** — native menu-bar / tray shells + settings (General · Agents · Power & Display · Notifications) + SMAppService helper install ← _next_
 - **M4** — display-off control, notification chimes, global shortcut, auto-update
 
 ## License

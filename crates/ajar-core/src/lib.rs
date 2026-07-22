@@ -19,6 +19,7 @@
 
 pub mod agent;
 pub mod guard;
+pub mod ping;
 pub mod registry;
 pub mod scan;
 pub mod state;
@@ -26,6 +27,7 @@ pub mod wake;
 
 pub use agent::{detect_agent_from_env, is_agent, Agent, Tracking};
 pub use guard::{Blocked, Guards, Power};
+pub use ping::{send_ping, Ping, PingServer};
 pub use registry::{Activity, Registry};
 pub use scan::scan_running;
 pub use state::{Engine, KeepAwake, Status};
