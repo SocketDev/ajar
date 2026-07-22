@@ -2,3 +2,8 @@
 **/*.rs.bk
 *.pdb
 .DS_Store
+
+# Generated Xcode project + build output — XcodeGen regenerates the .xcodeproj
+# from project.yml on every `make build`, so it's never committed.
+macos/**/*.xcodeproj
+macos/**/build/
