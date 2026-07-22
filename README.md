@@ -1,0 +1,93 @@
+<h1 align="center">ajar</h1>
+
+<p align="center">Keep your machine awake — <em>lid closed</em> — while your AI agents work.<br>
+Cross-platform. Agent-aware. Honest about what it can and can't do.</p>
+
+---
+
+Close the lid, walk away, let Claude Code / Codex / OpenCode keep running. `ajar`
+holds a wake lock **only while a watched agent is actually working** and releases
+it the moment they go idle — so your machine isn't awake all night for nothing.
+
+Unlike the Mac-only tools in this space, `ajar` is one Rust core with native
+menu-bar / system-tray shells on **macOS, Linux, and Windows**.
+
+## What it does
+
+- ✅ **Agent-aware** — knows when your agents are working vs. idle
+- ✅ **Auto-sleeps** when agents go idle (no more all-night wake-for-nothing)
+- ✅ **Lifecycle hooks** for Claude Code, Codex & OpenCode — accurate per-session state
+- ✅ **Process detection** for the rest (Cursor / Gemini / Aider / Cline)
+- ✅ **Finish notifications** — a chime + banner when your agents wrap up
+- ✅ **Battery guardrails** + "plugged-in only" mode
+- ✅ **Display-off control** to save even more power
+- ✅ **Thermal release** — lets the machine cool instead of cooking under a closed lid
+
+### Lifecycle hooks: why they matter
+
+Claude Code, Codex, and OpenCode expose lifecycle hooks — small scripts called
+when an agent starts a task, finishes one, or goes idle. `ajar` installs these
+automatically and uses them to track **per-session** state: each terminal window
+running an agent is tracked independently.
+
+So if you have three Claude Code sessions open — two working, one idle — `ajar`
+holds the wake lock for the two that are working and releases it the moment the
+last one finishes. A blunt keep-awake tool would stay on until you quit all three.
+
+## Cross-platform — the whole point
+
+| Capability | macOS | Linux | Windows |
+|---|---|---|---|
+| Lid-closed wake lock | ⚠️ Partial¹ | ✅ | ✅ |
+| Knows WORKING vs OPEN | ✅ | ✅ | ✅ |
+| Auto-sleep when agents finish | ✅ | ✅ | ✅ |
+| Claude Code / Codex / OpenCode hooks | ✅ | ✅ | ✅ |
+| Cursor / Gemini / Aider detection | ✅ process | ✅ process | ✅ process |
+| Finish notifications | ✅ | ✅ | ✅ |
+| Battery cut-off · plugged-in only | ✅ | ✅ | ✅ |
+| Display-off while agents run | ✅ | ✅ | ✅ |
+
+¹ **Honest about limits.** On Apple Silicon, macOS's clamshell (lid) sensor can
+still force sleep in some scenarios even with the documented power assertions
+held. `ajar` uses the same `IOPMAssertion` + `pmset disablesleep` mechanisms
+every tool in this space uses, and tells you plainly when it can't guarantee
+staying awake rather than overselling. On Linux (`logind` inhibitors) and
+Windows (power-scheme lid action) the lid-closed hold is complete.
+
+## How the wake lock works
+
+The hold is a **lease, never a latch** — a per-OS mechanism engaged only while an
+agent is working, and auto-released if `ajar` crashes, quits, or stops renewing,
+so your machine can always sleep again.
+
+- **macOS** — `IOPMAssertion` for idle-sleep; a privileged helper flips
+  `pmset -a disablesleep 1` for the lid-closed hold, active only while an agent runs.
+- **Linux** — `systemd-logind` inhibitor locks (`sleep` + `handle-lid-switch`).
+- **Windows** — `SetThreadExecutionState` for idle; the active power scheme's
+  lid-close action is set to "do nothing" while agents run, then restored.
+
+## Architecture
+
+```
+ajar-core (Rust)          — decisions: agent state, guardrails, wake engine
+  ├─ agent   — std-env agent signals + lifecycle-hook + process detection
+  ├─ wake    — WakeController trait + macOS / Linux / Windows backends
+  ├─ guard   — battery / thermal / power policy (pure, testable)
+  └─ state   — the engine: working + allowed → hold, else release
+native shells             — menu-bar / tray UI (SwiftUI · WinUI · GTK)
+```
+
+The core is dependency-light on purpose; the platform layer reads battery /
+thermal / process state and feeds the engine on a timer.
+
+## Roadmap
+
+- **M0** — core: agent detection, wake trait + macOS idle hold, guard + engine ← _here_
+- **M1** — macOS privileged helper (lid-closed) + Claude Code / Codex / OpenCode hook install + ping socket
+- **M2** — Linux (`logind`) + Windows (`powercfg`) wake backends
+- **M3** — native menu-bar / tray shells + settings (General · Agents · Power & Display · Notifications)
+- **M4** — display-off control, notification chimes, global shortcut, auto-update
+
+## License
+
+MIT © Socket

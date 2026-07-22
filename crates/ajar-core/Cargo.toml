@@ -1,0 +1,19 @@
+[package]
+name = "ajar-core"
+version = "0.0.0"
+description = "Keep your machine awake — lid closed — while your AI agents work. The cross-platform wake-lock + agent-awareness core behind ajar."
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+# M0 is intentionally dependency-free (positive-allowlist discipline). The
+# cross-platform process scan (sysinfo), battery + thermal readers, and the
+# hook-ping socket land in M1 as individually-audited deps.
+[dependencies]
+
+[lints.rust]
+unsafe_code = "allow" # the macOS wake path shells `caffeinate` today; the M1 IOPMAssertion/helper FFI will scope `unsafe` per-call.
+
+[lints.clippy]
+all = { level = "deny", priority = -1 }
