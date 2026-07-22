@@ -133,6 +133,33 @@ impl Agent {
             Agent::Kiro => &["kiro"],
         }
     }
+
+    /// Stable lowercase wire slug — used by the ping protocol + hook install.
+    pub fn slug(self) -> &'static str {
+        match self {
+            Agent::Claude => "claude",
+            Agent::Codex => "codex",
+            Agent::OpenCode => "opencode",
+            Agent::Gemini => "gemini",
+            Agent::Copilot => "copilot",
+            Agent::Pi => "pi",
+            Agent::Hermes => "hermes",
+            Agent::Cursor => "cursor",
+            Agent::Cline => "cline",
+            Agent::Aider => "aider",
+            Agent::Replit => "replit",
+            Agent::Goose => "goose",
+            Agent::Junie => "junie",
+            Agent::Auggie => "auggie",
+            Agent::Devin => "devin",
+            Agent::Kiro => "kiro",
+        }
+    }
+
+    /// Parse a wire slug back to an agent.
+    pub fn from_slug(slug: &str) -> Option<Agent> {
+        Agent::ALL.iter().copied().find(|a| a.slug() == slug)
+    }
 }
 
 /// Return the agent driving THIS process, read from the environment the agent

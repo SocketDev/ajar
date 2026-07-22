@@ -1,0 +1,21 @@
+[package]
+name = "ajar-hook"
+version = "0.0.0"
+description = "ajar lifecycle-hook command + installer: reports per-session agent Working/Idle and wires the hooks into an agent's config."
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[[bin]]
+name = "ajar-hook"
+path = "src/main.rs"
+
+# serde_json is the one dep — reading an agent's hook JSON on stdin + merging
+# into its settings.json. ajar-core stays zero-dep; this tooling crate carries it.
+[dependencies]
+ajar-core = { path = "../ajar-core" }
+serde_json = "1"
+
+[lints.clippy]
+all = { level = "deny", priority = -1 }
