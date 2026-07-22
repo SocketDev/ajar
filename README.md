@@ -73,12 +73,16 @@ ajar-core (Rust)          — decisions: agent state, guardrails, wake engine
   ├─ agent   — std-env agent signals + lifecycle-hook + process detection
   ├─ wake    — WakeController trait + macOS / Linux / Windows backends
   ├─ guard   — battery / thermal / power policy (pure, testable)
-  └─ state   — the engine: working + allowed → hold, else release
+  ├─ state   — the engine: working + allowed → hold, else release
+  └─ runtime — assembles ping server + process scan + engine on a timer
+ajar (Rust bin)           — `ajar run --json`: status NDJSON out, control in
 native shells             — menu-bar / tray UI (SwiftUI · WinUI · GTK)
 ```
 
-The core is dependency-light on purpose; the platform layer reads battery /
-thermal / process state and feeds the engine on a timer.
+The core is dependency-light on purpose. Each native shell drives the runtime
+as a subprocess (`ajar run --json`) — reading its status stream and forwarding
+the platform battery / thermal / power state it reads back down as commands, so
+the guardrails apply identically on every OS.
 
 ## Roadmap
 
@@ -87,7 +91,8 @@ thermal / process state and feeds the engine on a timer.
 - **M1b** — agent registry (per-session Working/Idle) + zero-dep process scan ✅
 - **M1b-2** — ping protocol + loopback socket server + `ajar-hook` (report command + Claude Code `settings.json` installer) ✅
 - **M2** — Linux (`logind`) + Windows (`powercfg`) wake backends + cross-platform CI ✅
-- **M3** — native menu-bar / tray shells + settings (General · Agents · Power & Display · Notifications) + SMAppService helper install ← _next_
+- **M3a** — `ajar run --json` bridge bin + macOS menu-bar shell (SwiftUI, socketeer theme): live status, keep-awake mode picker, working-agent list, IOKit battery/thermal forwarding ✅
+- **M3b** — settings tabs (General · Agents · Power & Display · Notifications) + SMAppService helper install + Windows (WinUI) / Linux (GTK) shells ← _next_
 - **M4** — display-off control, notification chimes, global shortcut, auto-update
 
 ## License
