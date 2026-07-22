@@ -151,6 +151,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         notifyItem.state = model.notifyOnFinish ? .on : .off
         menu.addItem(notifyItem)
 
+        let displayOffItem = NSMenuItem(
+            title: "Turn display off now",
+            action: #selector(turnDisplayOff),
+            keyEquivalent: ""
+        )
+        displayOffItem.target = self
+        menu.addItem(displayOffItem)
+
         menu.addItem(.separator())
         let quit = NSMenuItem(
             title: "Quit Ajar",
@@ -178,5 +186,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func toggleNotifyOnFinish() {
         model.notifyOnFinish.toggle()
+    }
+
+    /// Sleep the display immediately while ajar keeps the system awake — useful
+    /// when the lid's open and you're away but agents are still working.
+    @objc private func turnDisplayOff() {
+        let proc = Process()
+        proc.executableURL = URL(fileURLWithPath: "/usr/bin/pmset")
+        proc.arguments = ["displaysleepnow"]
+        do {
+            try proc.run()
+        } catch {
+            NSLog("ajar: pmset displaysleepnow failed: %@", error.localizedDescription)
+        }
     }
 }
