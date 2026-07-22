@@ -19,10 +19,14 @@
 
 pub mod agent;
 pub mod guard;
+pub mod registry;
+pub mod scan;
 pub mod state;
 pub mod wake;
 
 pub use agent::{detect_agent_from_env, is_agent, Agent, Tracking};
 pub use guard::{Blocked, Guards, Power};
+pub use registry::{Activity, Registry};
+pub use scan::scan_running;
 pub use state::{Engine, KeepAwake, Status};
 pub use wake::{controller, LidCapability, WakeController};
