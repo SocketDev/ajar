@@ -97,6 +97,16 @@ impl Engine {
         self.status = next;
         next
     }
+
+    /// Force-release the wake hold and go idle, regardless of mode — used on
+    /// shutdown so stopping ajar always lets the machine sleep again (in
+    /// `Always` mode a `tick(0)` would keep holding).
+    pub fn shutdown(&mut self) {
+        if matches!(self.status, Status::Awake) {
+            self.controller.release();
+        }
+        self.status = Status::Idle;
+    }
 }
 
 impl Drop for Engine {

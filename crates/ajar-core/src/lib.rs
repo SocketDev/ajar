@@ -21,9 +21,12 @@ pub mod agent;
 pub mod guard;
 pub mod ping;
 pub mod registry;
+pub mod runtime;
 pub mod scan;
 pub mod state;
 pub mod wake;
+
+pub use runtime::Runtime;
 
 pub use agent::{detect_agent_from_env, is_agent, Agent, Tracking};
 pub use guard::{Blocked, Guards, Power};
