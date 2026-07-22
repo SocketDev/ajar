@@ -55,6 +55,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let awake = model.status.state == .awake
         button.image = LidGlyph.statusImage(awake: awake)
         button.image?.isTemplate = true
+        button.imagePosition = .imageLeft
+        // Glanceable count of agents keeping the Mac awake right now.
+        let count = model.status.agents.count
+        button.title = count > 0 ? " \(count)" : ""
+        button.font = .systemFont(ofSize: 11, weight: .semibold)
         button.toolTip = "Ajar — \(model.status.state.rawValue)"
     }
 
