@@ -30,6 +30,7 @@ import path from 'node:path'
 
 import type { Page } from 'playwright-core'
 
+import { pollWithDecay } from '../../_shared/poll-with-decay.mts'
 import { DEVELOPER_ID_TEAM_ID } from './developer-id-plan.mts'
 
 export const APPLE_ORIGIN = 'https://developer.apple.com'
@@ -113,23 +114,68 @@ export async function readCertificatesListPage(page: Page): Promise<{
   // a FALSE "no certificate exists" on the one read that exists to refuse a
   // duplicate. The rendered DOM is the only place the rows are real.
   await page.goto(CERTIFICATES_LIST_URL, { waitUntil: 'domcontentloaded' })
-  await page.waitForTimeout(CERTIFICATES_RENDER_WAIT_MS)
-  const url = page.url()
-  if (url.includes(APPLE_SSO_HOST)) {
+  // Return the moment the page carries either the list heading or its
+  // empty-state, rather than sleeping a flat ceiling on a page that painted
+  // in 200ms. `locator('body').innerText()` rather than an
+  // `evaluate(() => document…)`: the fleet tsconfig carries no `dom` lib, so a
+  // DOM global inside an evaluate callback does not type-check.
+  const text = await awaitRendered(
+    page,
+    body =>
+      body.includes('Certificates, Identifiers') ||
+      body.includes(CERTIFICATES_EMPTY_MARKER),
+  )
+  if (page.url().includes(APPLE_SSO_HOST)) {
     return { rows: 0, state: 'signed-out' }
   }
-  // `locator('body').innerText()` rather than an `evaluate(() => document…)`:
-  // the fleet tsconfig carries no `dom` lib, so a DOM global inside an
-  // evaluate callback does not type-check. Playwright reads the rendered text
-  // for us without one.
-  const text = await page.locator('body').innerText()
   return readRenderedCertificatesList(text)
 }
 
-// How long the certificates SPA gets to paint its rows before they are read.
+// Ceiling on how long an SPA route gets to paint before a read gives up.
 // Generous on purpose: an under-wait reads an empty list as zero rows, which
-// is the exact false-negative this whole path exists to avoid.
+// is the exact false-negative this whole path exists to avoid. This is a
+// CEILING, not a fixed sleep — awaitRendered returns the moment the page
+// carries what the caller needs, so the common case costs a fraction of it.
 export const CERTIFICATES_RENDER_WAIT_MS = 6000
+
+// First poll interval while waiting for a paint. Short, because an SPA route
+// usually settles well inside a second.
+export const RENDER_POLL_INITIAL_MS = 250
+export const RENDER_POLL_MAX_MS = 1500
+
+/**
+ * Wait until the page's rendered text satisfies `ready`, and hand that text
+ * back. Returns the last text seen when the ceiling expires, so the caller
+ * classifies a real page rather than an empty string — an unpainted page must
+ * read as an ERROR, never as a confident "nothing here".
+ *
+ * Replaces a flat sleep at every read site. A fixed 6s wait was wrong twice
+ * over: it burned six seconds on a page that painted in 200ms, and it still
+ * had no answer for a slow one.
+ */
+export async function awaitRendered(
+  page: Page,
+  ready: (text: string) => boolean,
+  budgetMs = CERTIFICATES_RENDER_WAIT_MS,
+): Promise<string> {
+  let lastText = ''
+  const outcome = await pollWithDecay(
+    async () => {
+      const text = await page.locator('body').innerText()
+      lastText = text
+      return ready(text) ? text : undefined
+    },
+    {
+      budgetMs,
+      initialMs: RENDER_POLL_INITIAL_MS,
+      maxMs: RENDER_POLL_MAX_MS,
+      sleep: async ms => {
+        await page.waitForTimeout(ms)
+      },
+    },
+  )
+  return outcome.value ?? lastText
+}
 
 // The empty-state heading the portal renders when a team holds no
 // certificates at all. Calibrated live 2026-08-10.
@@ -182,8 +228,10 @@ export async function readPortalTeamId(
   page: Page,
 ): Promise<string | undefined> {
   await page.goto(CERTIFICATES_LIST_URL, { waitUntil: 'domcontentloaded' })
-  await page.waitForTimeout(CERTIFICATES_RENDER_WAIT_MS)
-  return extractPortalTeamId(await page.locator('body').innerText())
+  // Ready when the header line carrying `<name> - <TEAMID>` has painted.
+  return extractPortalTeamId(
+    await awaitRendered(page, body => extractPortalTeamId(body) !== undefined),
+  )
 }
 
 // The portal's own team switcher, calibrated from the live DOM 2026-08-10:
@@ -239,11 +287,17 @@ export async function switchPortalTeam(
     await option.first().waitFor({ state: 'visible' })
   }
   await option.first().click()
-  await page.waitForTimeout(CERTIFICATES_RENDER_WAIT_MS)
   // Selecting a team re-renders the header, so wait for the name line to come
-  // back before reading it rather than racing the re-render.
-  await teamName.waitFor({ state: 'visible' })
-  return extractPortalTeamId(await teamName.innerText())
+  // back and to show a team OTHER than the one we started on, rather than
+  // sleeping a flat ceiling and risking a read of the pre-switch header. The
+  // ceiling still applies, and the last value seen is returned either way, so
+  // the caller compares against what is really in effect.
+  await teamName.waitFor({ state: 'visible' }).catch(() => {})
+  const text = await awaitRendered(page, body => {
+    const seen = extractPortalTeamId(body)
+    return seen !== undefined && seen !== current
+  })
+  return extractPortalTeamId(text) ?? current
 }
 
 /**
@@ -266,29 +320,44 @@ export async function waitForPortalTeam(
   },
 ): Promise<string | undefined> {
   const cfg = { __proto__: null, ...config } as typeof config
-  const deadline = Date.now() + (cfg.timeoutMs ?? PORTAL_TEAM_WAIT_MS)
-  // Navigate ONCE, then poll PASSIVELY. The first version re-navigated on
-  // every tick, which reloaded the page under the operator every few seconds
-  // and closed the team switcher they were trying to use — the same mistake
-  // the sign-in probe made against Touch ID. A wait for a human action must
-  // never touch the page that human is acting on.
-  let seen = await readPortalTeamId(page)
-  let announced = false
-  while (seen !== cfg.wantedTeamId && Date.now() < deadline) {
-    if (!announced) {
-      cfg.onWait?.()
-      announced = true
-    }
-    try {
-      await page.waitForTimeout(PORTAL_TEAM_POLL_MS)
-      seen = extractPortalTeamId(await page.locator('body').innerText())
-    } catch {
-      // The operator closed the window, so there is nothing left to read.
-      return undefined
-    }
+  // Navigate ONCE, then poll PASSIVELY with a DECAYING interval. Two things
+  // this shape protects. Re-navigating per tick reloaded the page under the
+  // operator and closed the switcher they were reaching for — the same
+  // mistake the sign-in probe made against Touch ID, so a wait for a human
+  // action never touches the page that human is acting on. And a flat poll
+  // across a ten-minute wait is hundreds of reads at a vendor that
+  // rate-limits, where backing off keeps the first seconds responsive and the
+  // tail nearly free. A read that throws is a page mid-navigation rather than
+  // a failure, so the poller rides it and reports the last team it did see.
+  let lastSeen = await readPortalTeamId(page).catch(() => undefined)
+  if (lastSeen === cfg.wantedTeamId) {
+    return lastSeen
   }
-  return seen
+  const outcome = await pollWithDecay(
+    async () => {
+      const seen = extractPortalTeamId(await page.locator('body').innerText())
+      if (seen !== undefined) {
+        lastSeen = seen
+      }
+      return seen === cfg.wantedTeamId ? seen : undefined
+    },
+    {
+      budgetMs: cfg.timeoutMs ?? PORTAL_TEAM_WAIT_MS,
+      initialMs: PORTAL_TEAM_POLL_MS,
+      maxMs: PORTAL_TEAM_POLL_MAX_MS,
+      onFirstWait: cfg.onWait,
+      sleep: async ms => {
+        await page.waitForTimeout(ms)
+      },
+    },
+  )
+  return outcome.value ?? lastSeen
 }
+
+// The interval ceiling once the poll has backed off. A team switch is a few
+// clicks, so a ten-second tail is still prompt while costing ~60 reads across
+// the full budget instead of ~300.
+export const PORTAL_TEAM_POLL_MAX_MS = 10_000
 
 // Poll pace while the operator works the team switcher. Read-only: it reads
 // the page's own rendered text and never navigates it.
@@ -314,7 +383,14 @@ export async function readCertificateAddPage(page: Page): Promise<{
   // Developer ID certificate". A tooling blind spot must never be reported as
   // a permissions verdict about the operator.
   await page.goto(CERTIFICATES_ADD_URL, { waitUntil: 'domcontentloaded' })
-  await page.waitForTimeout(CERTIFICATES_RENDER_WAIT_MS)
+  // Ready when the type list has painted. Waiting on the LABEL rather than a
+  // flat sleep matters here: reading too early finds no radio and would report
+  // `missing`, which the caller renders as a verdict about the operator's
+  // role. The read must not answer until the page has actually shown its
+  // options.
+  await awaitRendered(page, body =>
+    body.includes(DEVELOPER_ID_CERTIFICATE_TYPE_LABEL),
+  )
   const radio = page.getByRole('radio', {
     name: DEVELOPER_ID_CERTIFICATE_TYPE_LABEL,
   })

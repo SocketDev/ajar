@@ -32,6 +32,8 @@ import path from 'node:path'
 
 import { normalizePath } from '@socketsecurity/lib-stable/paths/normalize'
 
+import { gitOut } from '../_shared/git-branch.mts'
+
 import { block, defineHook, editGuard, runHook } from '../_shared/guard.mts'
 import { verdictLine } from '../_shared/verdict.mts'
 
@@ -64,14 +66,46 @@ export function sanitizeNameSegment(segment: string): string {
  * The name a private package at `manifestPath` must carry, or undefined for a
  * repo-root manifest, whose name is the repo's own identity.
  */
-export function expectedLocalName(manifestPath: string): string | undefined {
+export function expectedLocalName(
+  manifestPath: string,
+  isRepoRoot: (dir: string) => boolean = dirIsRepoRoot,
+): string | undefined {
   const dir = path.posix.dirname(normalizePath(manifestPath))
   if (dir === '' || dir === '.') {
+    return undefined
+  }
+  // A REPO ROOT names itself after the repo, not after its parent directory,
+  // so it has no `local-` name to expect. Detecting that from the path's SHAPE
+  // was the bug: a relative `package.json` read as a root, but the absolute
+  // path an editor passes when writing another checkout read as a subpackage
+  // named after its own folder. The guard then demanded `local-<repo>` for a
+  // manifest correctly carrying the repo's identity - a name no member uses,
+  // as depsight, envrypt, abitious, and sauce all show. Ask git instead.
+  if (isRepoRoot(dir)) {
     return undefined
   }
   const ownDir = normalizePath(dir).split('/').filter(Boolean).at(-1) ?? ''
   const segment = sanitizeNameSegment(ownDir)
   return segment ? `${LOCAL_NAME_PREFIX}${segment}` : undefined
+}
+
+/**
+ * Whether `dir` is a checkout's top level.
+ *
+ * Asks git rather than probing for a `.git` entry: git is the authority on what
+ * a toplevel is, and it answers correctly for a linked worktree, whose `.git`
+ * is a FILE rather than a directory. Injected in specs so the decision stays
+ * testable without a real repo.
+ */
+export function dirIsRepoRoot(dir: string): boolean {
+  // `git rev-parse --show-toplevel` DIRECTLY rather than the shared
+  // resolveRepoRoot: that helper falls back to returning its input when git
+  // cannot answer, so comparing the two would read every unresolvable path as
+  // a root and disarm the guard everywhere. Requiring a real answer that
+  // equals `dir` fails SAFE — an unknown path is treated as a sub-package and
+  // still has to justify its name.
+  const top = gitOut(dir, ['rev-parse', '--show-toplevel'])
+  return !!top && normalizePath(top) === normalizePath(dir)
 }
 
 export interface PrivateNameFinding {

@@ -27,6 +27,11 @@ import { findInvocation } from './shell-command.mts'
 export const ALLOWED_CDN_HOSTS: readonly string[] = [
   // uv installer: `curl -LsSf https://astral.sh/uv/install.sh`, fleet Python tooling.
   'astral.sh',
+  // GitHub's avatar CDN — brand work reads a reference org/user avatar when a
+  // member logo derives from an upstream mark (the `action` member's logomark
+  // derives from the GitHub Actions org avatar). Exact host, never a
+  // `*.githubusercontent.com` wildcard: raw./gist. content stay denied.
+  'avatars.githubusercontent.com',
   // Google Chrome stable .deb — the odai chrome-builtin provisioning path
   // (setup-odai action + the odai repo's on-device model cache workflow);
   // real Chrome is required, Chromium cannot run the on-device model.
@@ -47,6 +52,12 @@ export const ALLOWED_CDN_HOSTS: readonly string[] = [
   'badge.socket.dev',
   // gh CLI (release assets, clones, API) + release-asset downloads; fleet-wide.
   'github.com',
+  // GitHub's REST API — the external-tools updater reads a repo's release list
+  // to find the newest soak-cleared version, and the pinned-label gate resolves
+  // a tag to its sha. Both are release METADATA reads against the same
+  // publisher `github.com` already covers; without the host the updater cannot
+  // see any GitHub-hosted tool at all.
+  'api.github.com',
   // Go toolchain download in CI/Docker for Go-based tooling.
   'go.dev',
   // Official Node.js distribution host for versioned source and binary archives.

@@ -1,19 +1,27 @@
 #!/usr/bin/env node
 /**
- * @file Assertion: every file under `assets/` is canonically named
- *   `<repo>-<mark>[-<variant>].<ext>` — a stray `logo.svg`, a wrong-repo
- *   prefix, or an unknown mark drifts the brand surface and breaks the
+ * @file Assertion: a repo's OWN brand marks under `assets/` are canonically
+ *   named `<repo>-<mark>[-<variant>].<ext>` — a wrong-repo prefix, an unknown
+ *   mark, or a bad variant drifts the brand surface and breaks the
  *   README/asset-dirs references that resolve those exact names. The canonical
  *   grammar: <repo> the repo's own name (package.json name sans @scope, else
  *   the repo directory basename) <mark> combomark | favicon | logomark |
  *   wordmark <variant> light | dark (optional — the theme-split of an adaptive
  *   mark) <ext> svg | png e.g. `sockeye-combomark.svg` (adaptive),
  *   `sockeye-combomark-dark.svg`, `sockeye-logomark.png`,
- *   `sockeye-favicon.svg`. CONDITIONAL: a repo with no `assets/`
- *   directory vacuous-passes, most members carry no brand marks. The gate
- *   bites only on a repo that HAS brand assets, so a malformed name is caught
- *   the moment marks land. Strict: a non-canonical name exits 1 (no known-good
- *   exceptions — the brand grammar is exact).
+ *   `sockeye-favicon.svg`. SCOPE: `assets/` is flat
+ *   (scripts/repo/gen/asset-dirs.mts) and holds three populations — the repo's
+ *   own marks, the shared Socket house kit every member receives by cascade
+ *   (`socket-shield-*`, `socket-combomark-*`, …), and functional files
+ *   (`coverage.svg`, `favicon-32.png`, `site.webmanifest`). Only the first is
+ *   the repo's to name, so the gate policies exactly the files prefixed
+ *   `<repo>-` and leaves the other two alone. A house mark is named by the
+ *   wheelhouse generator, not by the member, so holding it to the member's own
+ *   prefix would fail every repo in the fleet. CONDITIONAL: a repo with no
+ *   `assets/` directory vacuous-passes, and so does one carrying only house
+ *   marks. The gate bites the moment a repo's own mark lands. Strict: a
+ *   non-canonical name exits 1 (no known-good exceptions — the brand grammar is
+ *   exact).
  */
 
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
@@ -47,10 +55,12 @@ export interface BrandNameIssue {
 }
 
 /**
- * The repo-tier brand-asset directory for a repo root.
+ * The directory a repo's brand marks live in. Flat `assets/` — the layout
+ * owner (scripts/repo/gen/asset-dirs.mts) writes every mark straight there,
+ * so a nested `assets/repo/brand/` matches nothing in any fleet repo.
  */
 export function brandDir(repoRoot: string): string {
-  return path.join(repoRoot, 'assets', 'repo', 'brand')
+  return path.join(repoRoot, 'assets')
 }
 
 /**
@@ -108,9 +118,11 @@ export function canonicalBrandIssue(
 }
 
 /**
- * Scan a brand directory, returning the non-canonical files. Returns [] when
- * the directory is absent, the conditional vacuous pass. Pure; exported for
- * tests.
+ * Scan a brand directory, returning the non-canonical files among the repo's
+ * OWN marks. Files not prefixed `<repoName>-` are out of scope (the shared
+ * Socket house kit and functional files — see the SCOPE note up top). Returns
+ * [] when the directory is absent, the conditional vacuous pass. Pure;
+ * exported for tests.
  */
 export function scanBrandDir(dir: string, repoName: string): BrandNameIssue[] {
   let entries: string[]
@@ -126,6 +138,12 @@ export function scanBrandDir(dir: string, repoName: string): BrandNameIssue[] {
     const file = entries[i]!
     // .DS_Store and other dotfiles are not brand assets.
     if (file.startsWith('.')) {
+      continue
+    }
+    // Only the repo's own marks are the repo's to name. The house kit and the
+    // functional files sit in the same flat directory and belong to neither
+    // this grammar nor this repo.
+    if (!file.startsWith(`${repoName}-`)) {
       continue
     }
     const message = canonicalBrandIssue(file, repoName)
@@ -149,7 +167,7 @@ export function main(): void {
   const issues = scanBrandDir(dir, repoName)
   if (issues.length === 0) {
     logger.log(
-      `brand-assets-are-canonically-named: OK — all brand marks match ${repoName}-<mark>[-light|-dark].<svg|png>.`,
+      `brand-assets-are-canonically-named: OK — every ${repoName}- mark matches ${repoName}-<mark>[-light|-dark].<svg|png>.`,
     )
     return
   }
@@ -166,7 +184,8 @@ export function main(): void {
 }
 
 const SCRIPT_META: ScriptMeta = {
-  describe: 'checks that every assets/repo/brand/ file is canonically named',
+  describe:
+    "checks that a repo's own assets/ brand marks are canonically named",
   help: 'Usage: node scripts/fleet/check/brand-assets-are-canonically-named.mts',
 }
 

@@ -14,7 +14,7 @@ check fails any script body that reintroduces `run-s` / `run-p` /
   nondeterministic. That makes the regexp form a drop-in for the old `run-p`,
   and categorically wrong for ordered work.
 - **Order-dependent chain** → explicit `&&` chain:
-  `pnpm run gen:logo && pnpm run gen:socket-icon && …`. The order is visible
+  `pnpm run gen:logo:socket && pnpm run gen:socket-icon && …`. The order is visible
   in the script body itself, which is what the old glob-ordering rule always
   demanded ("list tasks explicitly") - now it is the only way to express
   order at all.

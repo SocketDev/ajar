@@ -195,7 +195,17 @@ export function formatSpendStatusline(config: StatuslineRenderConfig): string {
           getPalette('dark')[TIER_PALETTE_SLOT[tierFor(snapshot.usd, budget)]],
         )
       : meter
-  const partial = snapshot.unpricedModelCount > 0 ? ' · 🚨 PARTIAL' : ''
+  // No second alert glyph here: the gauge already carries the tier's own
+  // (⛽/⚠️/🚨), so repeating it read as two unrelated alarms. And "PARTIAL" named
+  // the state without saying what was partial about it. The count is the useful
+  // part, because it says the spend figure is UNDER the truth by whatever those
+  // models cost.
+  const partial =
+    snapshot.unpricedModelCount > 0
+      ? ` · excludes ${snapshot.unpricedModelCount} unpriced ${
+          snapshot.unpricedModelCount === 1 ? 'model' : 'models'
+        }`
+      : ''
   const model = cfg.model ? ` · ${cfg.model}` : ''
   return `${painted}${partial}${model}`
 }

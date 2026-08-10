@@ -157,8 +157,16 @@ export function main(): number {
     f => !grandfathered.has(f.submodulePath),
   )
   if (findings.length === 0) {
+    // A grandfathered path is an exemption, not compliance, so the success line
+    // names the backlog it is holding. Reporting a clean "every submodule" while
+    // 26 paths sit exempted claims a stronger fact than the check measured.
+    const exempt = scanMisrootedSubmodules().filter(f =>
+      grandfathered.has(f.submodulePath),
+    ).length
     logger.success(
-      'every submodule lives at the repo-root upstream/<name> home',
+      exempt === 0
+        ? 'every submodule lives at the repo-root upstream/<name> home'
+        : `no new misrooted submodule; ${exempt} grandfathered path(s) still owe the move to upstream/<name>`,
     )
     return 0
   }

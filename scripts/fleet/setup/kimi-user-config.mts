@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * @file `setup:kimi-user-config` — bridge the fleet-canonical Claude permission
+ * @file `setup:kimi-user-config` — bridge the fleet-owned Claude permission
  *   rules into Kimi Code CLI's user-owned `~/.kimi-code/config.toml`. Kimi has
  *   no project-level config for permissions/hooks, so this step merges only the
  *   fleet-managed `[[permission.rules]]` block and preserves all unrelated user
@@ -37,13 +37,22 @@ export interface KimiUserConfigOptions extends EcosystemStepOptions {
 }
 
 const FLEET_MARKERS = {
-  begin: '# <fleet-canonical>',
-  end: '# </fleet-canonical>',
+  begin: '# <fleet>',
+  end: '# </fleet>',
 } as const
 
+// Match the managed block by SHAPE, not by the exact marker text this version
+// writes. A config written by an earlier version carries a different spelling
+// inside the same angle brackets, and a remover keyed to one literal leaves
+// that block in place and appends a second one beside it.
+const FLEET_BLOCK_RE = /#[ \t]*<fleet[^>\n]*>[\s\S]*?#[ \t]*<\/fleet[^>\n]*>/g
+
+// The two `.claude/settings.json` keys that bracket the fleet-owned region.
+// They must stay identical to FLEET_SETTINGS_BEGIN/END in the settings
+// generator, which is what writes them.
 const CLAUDE_MARKERS = {
-  begin: '// <fleet-canonical>',
-  end: '// </fleet-canonical>',
+  begin: '// <fleet>',
+  end: '// </fleet>',
 } as const
 
 export interface PermissionRules {
@@ -57,13 +66,11 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 /**
- * Extract the fleet-canonical field object from `.claude/settings.json`.
- * Returns the subset of fields that live between the `// <fleet-canonical>`
- * and `// </fleet-canonical>` marker keys.
+ * Extract the fleet-owned field object from `.claude/settings.json`. Returns
+ * the subset of fields that live between the `// <fleet>` and `// </fleet>`
+ * marker keys.
  */
-export function extractFleetCanonicalFields(
-  text: string,
-): Record<string, unknown> {
+export function extractFleetOwnedFields(text: string): Record<string, unknown> {
   let parsed: unknown
   try {
     parsed = JSON.parse(text)
@@ -96,13 +103,13 @@ export function extractFleetCanonicalFields(
 }
 
 /**
- * Parse the canonical permission rules from the fleet-canonical fields.
+ * Parse the canonical permission rules from the fleet-owned fields.
  */
 export function parseClaudePermissions(
   fields: Record<string, unknown>,
 ): PermissionRules {
   if (!isRecord(fields['permissions'])) {
-    throw new Error('Fleet-canonical settings block has no permissions object')
+    throw new Error('Fleet-owned settings block has no permissions object')
   }
   const perms = fields['permissions']
   const read = (key: string): string[] => {
@@ -166,7 +173,7 @@ export function renderKimiHooks(): string[] {
 
 /**
  * Render the fleet-managed permission rules + PreToolUse fork hooks as a Kimi
- * TOML block, wrapped in the fleet-canonical markers.
+ * TOML block, wrapped in the fleet markers.
  */
 export function renderKimiPermissionRules(rules: PermissionRules): string {
   const lines: string[] = [FLEET_MARKERS.begin]
@@ -204,14 +211,7 @@ export function mergeKimiUserConfig(
   currentText: string,
   rules: PermissionRules,
 ): string {
-  const beginIdx = currentText.indexOf(FLEET_MARKERS.begin)
-  const endIdx = currentText.indexOf(FLEET_MARKERS.end)
-  let withoutFleet = currentText
-  if (beginIdx !== -1 && endIdx !== -1 && endIdx > beginIdx) {
-    withoutFleet =
-      currentText.slice(0, beginIdx) +
-      currentText.slice(endIdx + FLEET_MARKERS.end.length)
-  }
+  let withoutFleet = currentText.replace(FLEET_BLOCK_RE, '')
   // Clean up leftover blank lines at EOF from the removed block.
   withoutFleet = withoutFleet.replace(/\n+$/, '')
   const fleetBlock = renderKimiPermissionRules(rules)
@@ -243,7 +243,7 @@ export async function setupKimiUserConfig(
 
   try {
     const settingsText = readFileSync(settingsPath, 'utf8')
-    const fields = extractFleetCanonicalFields(settingsText)
+    const fields = extractFleetOwnedFields(settingsText)
     const rules = parseClaudePermissions(fields)
 
     const current = existsSync(kimiConfigPath)
@@ -272,7 +272,7 @@ export async function setupKimiUserConfig(
 
 const SCRIPT_META: ScriptMeta = {
   describe:
-    'bridges the fleet-canonical Claude permission rules into the Kimi Code user config',
+    'bridges the fleet-owned Claude permission rules into the Kimi Code user config',
   help: 'Usage: node scripts/fleet/setup/kimi-user-config.mts',
 }
 

@@ -27,6 +27,43 @@
         }
       }
     },
+    "ffmpeg": {
+      "notes": [
+        "Required by the recording-ui-walkthroughs skill, which encodes walkthrough recordings with it. Nothing builds or ships with ffmpeg.",
+        "A static single-file build per platform, so a recording is reproducible without brew/apt version drift and without an npm postinstall fetching an unverified binary.",
+        "The assets are bare executables rather than archives: download, verify, chmod +x.",
+        "linux-arm and linux-ia32 assets also exist upstream; add them if a runner ever needs one.",
+        "The release tag is authoritative, not the binary's own -version string: builds under tag b6.1.1 report 6.0 on some platforms."
+      ],
+      "description": "ffmpeg — encodes the walkthrough recordings the recording-ui-walkthroughs skill makes (pinned, SRI-verified per platform)",
+      "version": "6.1.1",
+      "versionDate": "2025-11-14",
+      "tag": "b6.1.1",
+      "repository": "github:eugeneware/ffmpeg-static",
+      "release": "asset",
+      "platforms": {
+        "darwin-arm64": {
+          "asset": "ffmpeg-darwin-arm64",
+          "integrity": "sha512-f9QbXBkYNKwtz+UiJCQjsdi6AaxMMTHK4/+1FtxEOWc9jvUv9/fsDIQYsQs5Kdb0f6yzs73E99F3TdKc+hTHcw=="
+        },
+        "darwin-x64": {
+          "asset": "ffmpeg-darwin-x64",
+          "integrity": "sha512-GGMM2E3ecaslGVXK187xBNxC6qTNzSeSoI0hkU5KTxMyNgW2GVPkHsi7okAD13rwf9qrg+eW+/HMNXPlkivvQQ=="
+        },
+        "linux-arm64": {
+          "asset": "ffmpeg-linux-arm64",
+          "integrity": "sha512-nqRI26ZJM2SVvnj8N9hv0hgj42GaMTu43/b0pL03rHvzerMvYvnMjiUU5KXfH8wJoUsFx1vkK97oxyIOSw2g3Q=="
+        },
+        "linux-x64": {
+          "asset": "ffmpeg-linux-x64",
+          "integrity": "sha512-Eo8YyZMPb+GHzXaa26+TXP+r9h4cY0pYlmikzaKvyszS90RBDDLz46AE/o4w/V2tCErteqZpWkb2p/xtptGT9A=="
+        },
+        "win-x64": {
+          "asset": "ffmpeg-win32-x64",
+          "integrity": "sha512-YxEIRZu0P5jz90237Kr4mTWYdzbq9ZxutcUqH/TuY5IUBZgf7IiEKh8OSEWH8gg3Mavvw8egVFcZr+fAbv/2RA=="
+        }
+      }
+    },
     "pnpm": {
       "notes": [
         "pnpm publishes 7 platform-native binaries: linux-{x64,arm64}{,-musl}, darwin-arm64, win-{x64,arm64}. Verified against v11.8.0 (2026-06-18).",

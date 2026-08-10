@@ -414,6 +414,17 @@ export function buildPathsAndSupplyChainSteps(): CheckStep[] {
     // consolidation strands. config-segregation twin of the vitest gate above.
     () =>
       run('node', ['scripts/fleet/check/coverage-config-is-consolidated.mts']),
+    // A .claude/settings.json brackets its fleet-owned region with the short
+    // `// <fleet>` key pair. The merger looks that pair up by exact string, so a
+    // retired spelling is not a cosmetic drift: hydration finds no region,
+    // reports "missing or misordered markers. Nothing written.", and the member
+    // stops receiving fleet settings while its CI stays green. Scoped to parsed
+    // JSON keys — the named-block grammar uses the same word as a block TAG in
+    // CLAUDE.md and ignore files, which is a separate family.
+    () =>
+      run('node', [
+        'scripts/fleet/check/claude-settings-fleet-markers-are-short.mts',
+      ]),
     // Never pin the microarch of a SHIPPED build — a distributed artifact must
     // detect the CPU at run time (portable SIMD = runtime dispatch), not bake in
     // the build machine's ISA and SIGILL on older CPUs. Fails on Rust

@@ -79,6 +79,7 @@ export const FLEET_SKILL_CATALOG: Readonly<Record<string, SkillDefinition>> = {
   'property-and-fuzz-testing': { family: 'build', mode: 'mutating' },
   prose: { family: 'orient', mode: 'mutating' },
   pushing: { family: 'ship', mode: 'mutating' },
+  'recording-ui-walkthroughs': { family: 'design', mode: 'mutating' },
   'refreshing-history': { family: 'fleet', mode: 'mutating' },
   'releasing-a-package': { family: 'ship', mode: 'mutating' },
   'rendering-chromium-to-png': { family: 'design', mode: 'read-only' },

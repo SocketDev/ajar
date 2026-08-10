@@ -59,10 +59,13 @@ const CONFIG_FILE = '.config/repo/socket-wheelhouse.json'
 const LANES_FILE = 'scripts/fleet/cover/lanes.mts'
 
 /**
- * The capability keys a coverage lane can dispatch on. MIRROR of
- * `VALID_CAPABILITIES` in scripts/repo/sync-scaffolding/repo-shape.mts, copied
- * because scripts/fleet/ cascades into members carrying no scripts/repo tree.
- * drift-watch: keep the two lists identical.
+ * The capability keys a coverage lane can dispatch on — the SUBSET of
+ * `VALID_CAPABILITIES` in scripts/repo/sync-scaffolding/repo-shape.mts that
+ * owns a coverage lane, copied because scripts/fleet/ cascades into members
+ * carrying no scripts/repo tree. Not every registered capability appears here:
+ * a hook/script-only trait (`swift` — lint, fmt, and fix wrappers, no coverage
+ * lane) is a legitimate gap. drift-watch: every entry here must also appear in
+ * `VALID_CAPABILITIES`.
  */
 export const LANE_CAPABILITIES: readonly string[] = ['cargo', 'cpp', 'go']
 
