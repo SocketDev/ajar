@@ -1,0 +1,12 @@
+{
+  "name": "local-prefer-crlf-safe-split",
+  "private": true,
+  "type": "module",
+  "main": "./index.mts",
+  "exports": {
+    ".": "./index.mts"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.mts"
+  }
+}

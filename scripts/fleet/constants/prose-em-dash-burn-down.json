@@ -1,0 +1,4 @@
+{
+  "$comment": "Burn-down debt for scripts/fleet/check/prose-em-dashes-are-absent.mts. Each key is a repo-relative markdown path still carrying an em-dash; each value is the ISO date it entered the burn-down. THIS LIST ONLY EVER SHRINKS, AND IT SHRINKS TO EMPTY: a file whose em-dashes are rewritten comes out of this list in the same commit, and nothing is ever added. See scripts/fleet/constants/prose-em-dash-burn-down.mts.",
+  "files": {}
+}
