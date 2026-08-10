@@ -1,7 +1,12 @@
 <h1 align="center">ajar</h1>
 
 <p align="center">Keep your machine awake — <em>lid closed</em> — while your AI agents work.<br>
-Cross-platform. Agent-aware. Honest about what it can and can't do.</p>
+Cross-platform. Agent-aware. Explicit about what it can and can't do.</p>
+
+<p align="center">
+<a href="https://twitter.com/SocketSecurity"><img src="https://img.shields.io/twitter/follow/SocketSecurity?style=social" alt="Follow @SocketSecurity" /></a>
+<a href="https://bsky.app/profile/socket.dev"><img src="https://img.shields.io/badge/Follow-@socket.dev-1DA1F2?style=social&logo=bluesky" alt="Follow @socket.dev on Bluesky" /></a>
+</p>
 
 ---
 
@@ -11,6 +16,32 @@ it the moment they go idle — so your machine isn't awake all night for nothing
 
 Unlike the Mac-only tools in this space, `ajar` is one Rust core with native
 menu-bar / system-tray shells on **macOS, Linux, and Windows**.
+
+## Install
+
+Two pieces: a Rust core and CLI at the repo root, and a SwiftUI menu-bar app
+under `macos/AjarMenuBar/`.
+
+```sh
+cargo build --release          # the ajar CLI, helper, and hook
+open macos/AjarMenuBar/AjarMenuBar.xcodeproj   # the macOS menu-bar shell
+```
+
+## Usage
+
+Run the daemon and let it watch for working agents:
+
+```sh
+ajar run                       # hold the wake lock while an agent works
+ajar run --json                # machine-readable status, what the menu bar reads
+ajar status                    # what is held right now, and why
+```
+
+`ajar-hook` wires Claude Code up so sessions report their state:
+
+```sh
+ajar-hook install              # add the reporter to Claude Code settings
+```
 
 ## What it does
 
@@ -94,6 +125,20 @@ the guardrails apply identically on every OS.
 - **M3a** — `ajar run --json` bridge bin + macOS menu-bar shell (SwiftUI, socketeer theme): live status, keep-awake mode picker, working-agent list, IOKit battery/thermal forwarding ✅
 - **M3b** — settings tabs (General · Agents · Power & Display · Notifications) + SMAppService helper install + Windows (WinUI) / Linux (GTK) shells ← _next_
 - **M4** — display-off control, notification chimes, global shortcut, auto-update
+
+## Development
+
+```sh
+pnpm install                   # fleet tooling: hooks, lint, checks
+pnpm run check                 # the fleet gate
+pnpm run fix                   # autofix what it can
+cargo test                     # the Rust suite
+```
+
+The Rust workspace lives in `crates/`: `ajar` (CLI), `ajar-core` (wake traits
+and the engine), `ajar-helper` (the privileged macOS lease), and `ajar-hook`
+(the agent reporter). The macOS shell is SwiftUI plus AppKit for the menu-bar
+plumbing.
 
 ## License
 
