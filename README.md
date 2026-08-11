@@ -67,16 +67,16 @@ last one finishes. A blunt keep-awake tool would stay on until you quit all thre
 
 ## Cross-platform — the whole point
 
-| Capability | macOS | Linux | Windows |
-|---|---|---|---|
-| Lid-closed wake lock | ⚠️ Partial¹ | ✅ | ✅ |
-| Knows WORKING vs OPEN | ✅ | ✅ | ✅ |
-| Auto-sleep when agents finish | ✅ | ✅ | ✅ |
-| Claude Code / Codex / OpenCode hooks | ✅ | ✅ | ✅ |
-| Cursor / Gemini / Aider detection | ✅ process | ✅ process | ✅ process |
-| Finish notifications | ✅ | ✅ | ✅ |
-| Battery cut-off · plugged-in only | ✅ | ✅ | ✅ |
-| Display-off while agents run | ✅ | ✅ | ✅ |
+| Capability                           | macOS       | Linux      | Windows    |
+| ------------------------------------ | ----------- | ---------- | ---------- |
+| Lid-closed wake lock                 | ⚠️ Partial¹ | ✅         | ✅         |
+| Knows WORKING vs OPEN                | ✅          | ✅         | ✅         |
+| Auto-sleep when agents finish        | ✅          | ✅         | ✅         |
+| Claude Code / Codex / OpenCode hooks | ✅          | ✅         | ✅         |
+| Cursor / Gemini / Aider detection    | ✅ process  | ✅ process | ✅ process |
+| Finish notifications                 | ✅          | ✅         | ✅         |
+| Battery cut-off · plugged-in only    | ✅          | ✅         | ✅         |
+| Display-off while agents run         | ✅          | ✅         | ✅         |
 
 ¹ **Honest about limits.** On Apple Silicon, macOS's clamshell (lid) sensor can
 still force sleep in some scenarios even with the documented power assertions

@@ -10,12 +10,8 @@
     "type": "binary"
   },
   "capabilities": {
-    "cargo": [
-      "."
-    ],
-    "swift": [
-      "macos/AjarMenuBar"
-    ]
+    "cargo": ["."],
+    "swift": ["macos/AjarMenuBar"]
   },
   "bundle": {
     "ref": "fleet-pack-dcafeb6111c7f91f192d8d1843e222c8c04cc3d4",
