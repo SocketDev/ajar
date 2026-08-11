@@ -199,6 +199,60 @@ export function listStagedRenamedPaths(repoDir: string): Set<string> {
   return renamed
 }
 
+/**
+ * Paths staged as DELETIONS whose path is gitignored — the index-only untrack
+ * that `ignored-files-are-untracked --fix --untrack` performs, and the only
+ * remedy it offers for a tracked-but-ignored file.
+ *
+ * Exempt for the same reason as a staged rename: this guard exists to stop a
+ * peer session's CONTENT riding in under our authorship, and a staged deletion
+ * of a gitignored path carries no content. The fixer stages it through
+ * `git update-index --force-remove` inside its own process, so the path never
+ * appears in a Bash command line and the session-touched walk cannot see it.
+ * Without this the sanctioned fix is unlandable: the pathspec form the block
+ * recommends re-stages the file from the worktree, which undoes the untrack.
+ */
+export function listStagedIgnoredDeletions(repoDir: string): Set<string> {
+  const out = new Set<string>()
+  const staged = spawnSync(
+    'git',
+    ['diff', '--cached', '--name-only', '--diff-filter=D'],
+    { cwd: repoDir, timeout: spawnTimeoutMs(5000) },
+  )
+  if (staged.status !== 0) {
+    return out
+  }
+  const deleted = String(staged.stdout)
+    .split(/\r?\n/)
+    .map((s: string) => s.trim())
+    .filter(Boolean)
+  if (deleted.length === 0) {
+    return out
+  }
+  // `--no-index` is required: a path still in the index is judged by the
+  // ignore RULES rather than skipped for being tracked, which is exactly the
+  // tracked-and-ignored contradiction being resolved here.
+  const ignored = spawnSync('git', ['check-ignore', '--no-index', '--stdin'], {
+    cwd: repoDir,
+    input: `${deleted.join('\n')}\n`,
+    stdioString: true,
+    timeout: spawnTimeoutMs(5000),
+  })
+  // 0 — at least one path is ignored; 1 — none are. Anything else is a real
+  // git error, and reporting no exemption keeps the guard's default posture.
+  if (ignored.status !== 0 && ignored.status !== 1) {
+    return out
+  }
+  const lines = String(ignored.stdout)
+    .split(/\r?\n/)
+    .map((s: string) => s.trim())
+    .filter(Boolean)
+  for (let i = 0, { length } = lines; i < length; i += 1) {
+    out.add(lines[i]!)
+  }
+  return out
+}
+
 export function checkCommand(command: string, payload: ToolCallPayload) {
   const repoDir = getRepoDir(command, payload.cwd)
   const transcriptPath = payload.transcript_path
@@ -284,10 +338,11 @@ export function checkCommand(command: string, payload: ToolCallPayload) {
     }
     const touched = readSessionTouchedPaths(transcriptPath)
     const renamed = listStagedRenamedPaths(repoDir)
+    const ignoredDeletions = listStagedIgnoredDeletions(repoDir)
     const unfamiliar: string[] = []
     for (let i = 0, { length } = staged; i < length; i += 1) {
       const f = staged[i]!
-      if (renamed.has(f)) {
+      if (renamed.has(f) || ignoredDeletions.has(f)) {
         continue
       }
       const abs = path.resolve(repoDir, f)
