@@ -85,6 +85,27 @@ const REQUIRED_SECTIONS = [
 ] as const
 
 /**
+ * True when the README carries a markdown `# ` title, the anchor every other
+ * shape check scans forward from. Fenced lines are skipped so a `# ` inside a
+ * shell example never reads as the title.
+ */
+export function hasMarkdownTitle(body: string): boolean {
+  const lines = body.split(/\r?\n/)
+  let inFence = false
+  for (let i = 0, { length } = lines; i < length; i += 1) {
+    const trimmed = lines[i]!.trim()
+    if (trimmed.startsWith('```')) {
+      inFence = !inFence
+      continue
+    }
+    if (!inFence && trimmed.startsWith('# ')) {
+      return true
+    }
+  }
+  return false
+}
+
+/**
  * True when the README answers "why does this exist" before its first `##`,
  * either as lead prose or as the optional heading. Badges, HTML, comments, and
  * blank lines do not count as prose.
@@ -341,9 +362,17 @@ export function findShapeViolations(
     if (!hasLeadAnswer(text)) {
       findings.push({
         kind: 'missing-section',
-        detail:
-          'no lead "why the repo exists" paragraph before the first "##" ' +
-          '(add it directly under the title and badges)',
+        // Two different defects reach the same false result, so name which
+        // one. hasLeadAnswer scans forward from the markdown `# ` title, so a
+        // README titled with an HTML `<h1>` never starts scanning and reports
+        // a missing lead paragraph while looking at one. That message sends
+        // the reader to rewrite prose that is already correct.
+        detail: hasMarkdownTitle(text)
+          ? 'no lead "why the repo exists" paragraph before the first "##" ' +
+            '(add it directly under the title and badges)'
+          : 'no markdown "# <name>" title, so the lead paragraph cannot be ' +
+            'located (an HTML <h1> does not count — the skeleton titles with ' +
+            'a markdown heading)',
       })
     }
     let cursor = 0

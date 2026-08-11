@@ -1,6 +1,6 @@
-<h1 align="center">ajar</h1>
+# ajar
 
-<p align="center">Keep your machine awake — <em>lid closed</em> — while your AI agents work.<br>
+<p align="center">Keep your machine awake - <em>lid closed</em> - while your AI agents work.<br>
 Cross-platform. Agent-aware. Explicit about what it can and can't do.</p>
 
 <p align="center">
@@ -12,7 +12,7 @@ Cross-platform. Agent-aware. Explicit about what it can and can't do.</p>
 
 Close the lid, walk away, let Claude Code / Codex / OpenCode keep running. `ajar`
 holds a wake lock **only while a watched agent is actually working** and releases
-it the moment they go idle — so your machine isn't awake all night for nothing.
+it the moment they go idle - so your machine isn't awake all night for nothing.
 
 Unlike the Mac-only tools in this space, `ajar` is one Rust core with native
 menu-bar / system-tray shells on **macOS, Linux, and Windows**.
@@ -45,27 +45,27 @@ ajar-hook install              # add the reporter to Claude Code settings
 
 ## What it does
 
-- ✅ **Agent-aware** — knows when your agents are working vs. idle
+- ✅ **Agent-aware** - knows when your agents are working vs. idle
 - ✅ **Auto-sleeps** when agents go idle (no more all-night wake-for-nothing)
-- ✅ **Lifecycle hooks** for Claude Code, Codex & OpenCode — accurate per-session state
+- ✅ **Lifecycle hooks** for Claude Code, Codex & OpenCode - accurate per-session state
 - ✅ **Process detection** for the rest (Cursor / Gemini / Aider / Cline)
-- ✅ **Finish notifications** — a chime + banner when your agents wrap up
+- ✅ **Finish notifications** - a chime + banner when your agents wrap up
 - ✅ **Battery guardrails** + "plugged-in only" mode
 - ✅ **Display-off control** to save even more power
-- ✅ **Thermal release** — lets the machine cool instead of cooking under a closed lid
+- ✅ **Thermal release** - lets the machine cool instead of cooking under a closed lid
 
 ### Lifecycle hooks: why they matter
 
-Claude Code, Codex, and OpenCode expose lifecycle hooks — small scripts called
+Claude Code, Codex, and OpenCode expose lifecycle hooks - small scripts called
 when an agent starts a task, finishes one, or goes idle. `ajar` installs these
 automatically and uses them to track **per-session** state: each terminal window
 running an agent is tracked independently.
 
-So if you have three Claude Code sessions open — two working, one idle — `ajar`
+So if you have three Claude Code sessions open - two working, one idle - `ajar`
 holds the wake lock for the two that are working and releases it the moment the
 last one finishes. A blunt keep-awake tool would stay on until you quit all three.
 
-## Cross-platform — the whole point
+## Cross-platform - the whole point
 
 | Capability                           | macOS       | Linux      | Windows    |
 | ------------------------------------ | ----------- | ---------- | ---------- |
@@ -87,14 +87,14 @@ Windows (power-scheme lid action) the lid-closed hold is complete.
 
 ## How the wake lock works
 
-The hold is a **lease, never a latch** — a per-OS mechanism engaged only while an
+The hold is a **lease, never a latch** - a per-OS mechanism engaged only while an
 agent is working, and auto-released if `ajar` crashes, quits, or stops renewing,
 so your machine can always sleep again.
 
-- **macOS** — `IOPMAssertion` for idle-sleep; a privileged helper flips
+- **macOS** - `IOPMAssertion` for idle-sleep; a privileged helper flips
   `pmset -a disablesleep 1` for the lid-closed hold, active only while an agent runs.
-- **Linux** — `systemd-logind` inhibitor locks (`sleep` + `handle-lid-switch`).
-- **Windows** — `SetThreadExecutionState` for idle; the active power scheme's
+- **Linux** - `systemd-logind` inhibitor locks (`sleep` + `handle-lid-switch`).
+- **Windows** - `SetThreadExecutionState` for idle; the active power scheme's
   lid-close action is set to "do nothing" while agents run, then restored.
 
 ## Architecture
@@ -111,20 +111,20 @@ native shells             — menu-bar / tray UI (SwiftUI · WinUI · GTK)
 ```
 
 The core is dependency-light on purpose. Each native shell drives the runtime
-as a subprocess (`ajar run --json`) — reading its status stream and forwarding
+as a subprocess (`ajar run --json`) - reading its status stream and forwarding
 the platform battery / thermal / power state it reads back down as commands, so
 the guardrails apply identically on every OS.
 
 ## Roadmap
 
-- **M0** — core: agent detection, wake trait + macOS idle hold, guard + engine ✅
-- **M1a** — macOS privileged helper: `pmset disablesleep` as a heartbeat lease (lid-closed hold) + self-renewing `PmsetHelper` backend ✅
-- **M1b** — agent registry (per-session Working/Idle) + zero-dep process scan ✅
-- **M1b-2** — ping protocol + loopback socket server + `ajar-hook` (report command + Claude Code `settings.json` installer) ✅
-- **M2** — Linux (`logind`) + Windows (`powercfg`) wake backends + cross-platform CI ✅
-- **M3a** — `ajar run --json` bridge bin + macOS menu-bar shell (SwiftUI, socketeer theme): live status, keep-awake mode picker, working-agent list, IOKit battery/thermal forwarding ✅
-- **M3b** — settings tabs (General · Agents · Power & Display · Notifications) + SMAppService helper install + Windows (WinUI) / Linux (GTK) shells ← _next_
-- **M4** — display-off control, notification chimes, global shortcut, auto-update
+- **M0** - core: agent detection, wake trait + macOS idle hold, guard + engine ✅
+- **M1a** - macOS privileged helper: `pmset disablesleep` as a heartbeat lease (lid-closed hold) + self-renewing `PmsetHelper` backend ✅
+- **M1b** - agent registry (per-session Working/Idle) + zero-dep process scan ✅
+- **M1b-2** - ping protocol + loopback socket server + `ajar-hook` (report command + Claude Code `settings.json` installer) ✅
+- **M2** - Linux (`logind`) + Windows (`powercfg`) wake backends + cross-platform CI ✅
+- **M3a** - `ajar run --json` bridge bin + macOS menu-bar shell (SwiftUI, socketeer theme): live status, keep-awake mode picker, working-agent list, IOKit battery/thermal forwarding ✅
+- **M3b** - settings tabs (General · Agents · Power & Display · Notifications) + SMAppService helper install + Windows (WinUI) / Linux (GTK) shells ← _next_
+- **M4** - display-off control, notification chimes, global shortcut, auto-update
 
 ## Development
 
@@ -135,10 +135,10 @@ pnpm run fix                   # autofix what it can
 cargo test                     # the Rust suite
 ```
 
-The Rust workspace lives in `crates/`: `ajar` (CLI), `ajar-core` (wake traits
-and the engine), `ajar-helper` (the privileged macOS lease), and `ajar-hook`
-(the agent reporter). The macOS shell is SwiftUI plus AppKit for the menu-bar
-plumbing.
+The Rust workspace lives in `crates/`. `ajar` is the CLI, `ajar-core` holds the
+wake traits and the engine, `ajar-helper` is the privileged macOS lease, and
+`ajar-hook` is the agent reporter. The macOS shell is SwiftUI plus AppKit for
+the menu-bar plumbing.
 
 ## License
 
