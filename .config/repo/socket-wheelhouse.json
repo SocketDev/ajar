@@ -10,11 +10,15 @@
     "type": "binary"
   },
   "capabilities": {
-    "cargo": ["."],
-    "swift": ["macos/AjarMenuBar"]
+    "cargo": [
+      "."
+    ],
+    "swift": [
+      "macos/AjarMenuBar"
+    ]
   },
   "bundle": {
-    "ref": "fleet-pack-58c614bcd9a7a02f410647c7e0534ebcc8a10b19",
-    "cascadeSha": "58c614bcd9a7a02f410647c7e0534ebcc8a10b19"
+    "ref": "fleet-pack-5beec3e6146e39414f53bc8aebc7a0ccb575fdef",
+    "cascadeSha": "5beec3e6146e39414f53bc8aebc7a0ccb575fdef"
   }
 }
