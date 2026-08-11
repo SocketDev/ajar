@@ -14,8 +14,8 @@
     "swift": ["macos/AjarMenuBar"]
   },
   "bundle": {
-    "ref": "fleet-pack-6cdc246b6ecdfcffd11031365d007aacbf4e51a3",
-    "cascadeSha": "6cdc246b6ecdfcffd11031365d007aacbf4e51a3"
+    "ref": "fleet-pack-99657d4abb50db5554742846b5524facd567c001",
+    "cascadeSha": "99657d4abb50db5554742846b5524facd567c001"
   },
   "ai": {
     "localAssist": true
