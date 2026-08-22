@@ -98,7 +98,7 @@ catalog:
   # @rolldown/binding-* + @oxc-project/types stay as soak-excluded
   # transitives (consumers depend on `rolldown` only).
   'regjsparser': 0.13.2
-  'rolldown': 1.2.3
+  'rolldown': 1.2.4
   'semver': 7.8.5
   'shell-quote': 1.10.0
   'taze': 21.1.0
