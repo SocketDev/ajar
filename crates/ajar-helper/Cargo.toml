@@ -1,0 +1,23 @@
+[package]
+name = "ajar-helper"
+version = "0.0.0"
+description = "Privileged lid-closed-hold helper for ajar (macOS): flips `pmset disablesleep` as a heartbeat-leased hold that always releases on crash."
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+# The daemon logic (lease FSM + wire protocol) is a testable library; the thin
+# binary wires it to a unix socket + `pmset`. Zero deps.
+[lib]
+name = "ajar_helper"
+path = "src/lib.rs"
+
+[[bin]]
+name = "ajar-helper"
+path = "src/main.rs"
+
+[dependencies]
+
+[lints.clippy]
+all = { level = "deny", priority = -1 }

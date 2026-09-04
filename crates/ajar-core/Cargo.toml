@@ -1,0 +1,29 @@
+[package]
+name = "ajar-core"
+version = "0.0.0"
+description = "Keep your machine awake — lid closed — while your AI agents work. The cross-platform wake-lock + agent-awareness core behind ajar."
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+# M0 is intentionally dependency-free (positive-allowlist discipline). The
+# cross-platform process scan (sysinfo), battery + thermal readers, and the
+# hook-ping socket land in M1 as individually-audited deps.
+[dependencies]
+
+# Tier-1 property tests (`#[cfg(test)] mod tests` next to the parser): the ping
+# wire parser reads lines off a loopback socket, so arbitrary bytes reach it and
+# it must never panic. Properties cover never-panic on arbitrary input and
+# parse(encode(x)) == x. proptest's explicit `Strategy` objects shrink better
+# than quickcheck. Dev-only, never in the shipped tree.
+# `default-features = false` drops the `fork`/`timeout` (rusty-fork) and regex
+# machinery this suite does not use, keeping the dev tree lean.
+[dev-dependencies]
+proptest = { version = "1", default-features = false, features = ["std"] }
+
+[lints.rust]
+unsafe_code = "allow" # the macOS wake path shells `caffeinate` today; the M1 IOPMAssertion/helper FFI will scope `unsafe` per-call.
+
+[lints.clippy]
+all = { level = "deny", priority = -1 }

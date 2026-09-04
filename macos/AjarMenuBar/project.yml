@@ -1,0 +1,54 @@
+name: AjarMenuBar
+options:
+  bundleIdPrefix: dev.socket
+  deploymentTarget:
+    macOS: '14.0'
+  createIntermediateGroups: true
+
+settings:
+  base:
+    SWIFT_VERSION: '5.9'
+    MACOSX_DEPLOYMENT_TARGET: '14.0'
+    DEAD_CODE_STRIPPING: YES
+    CODE_SIGN_STYLE: Automatic
+    CODE_SIGN_IDENTITY: '-'
+    ENABLE_HARDENED_RUNTIME: YES
+
+targets:
+  AjarMenuBar:
+    type: application
+    platform: macOS
+    sources:
+      - path: AjarMenuBar
+    info:
+      path: AjarMenuBar/Info.plist
+      properties:
+        CFBundleName: Ajar
+        CFBundleDisplayName: Ajar
+        CFBundleShortVersionString: '0.1.0'
+        CFBundleVersion: '1'
+        # LSUIElement hides the app from the Dock and ⌘-Tab; menu-bar-only.
+        LSUIElement: true
+        NSHumanReadableCopyright: '© Socket'
+        NSAppTransportSecurity:
+          NSAllowsArbitraryLoads: false
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.socket.ajar.menubar
+        ENABLE_PREVIEWS: YES
+    postBuildScripts:
+      - name: Build and bundle ajar binary
+        script: |
+          set -euo pipefail
+          export PATH="$HOME/.cargo/bin:$PATH"
+          REPO_ROOT="${SRCROOT}/../.."
+          (cd "$REPO_ROOT" && cargo build --release -p ajar)
+          DEST="${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}"
+          mkdir -p "$DEST"
+          cp "$REPO_ROOT/target/release/ajar" "$DEST/ajar"
+          # Re-sign so the embedded binary is part of the app's signature.
+          codesign --force --sign - "$DEST/ajar" || true
+        inputFiles:
+          - $(SRCROOT)/../../crates/ajar/src/main.rs
+        outputFiles:
+          - $(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/ajar

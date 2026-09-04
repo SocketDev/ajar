@@ -1,0 +1,18 @@
+[package]
+name = "ajar"
+version = "0.0.0"
+description = "The ajar runtime binary — the native tray shells drive it as a subprocess (`ajar run --json`), reading its status stream and sending control commands on stdin."
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[[bin]]
+name = "ajar"
+path = "src/main.rs"
+
+[dependencies]
+ajar-core = { path = "../ajar-core" }
+
+[lints.clippy]
+all = { level = "deny", priority = -1 }

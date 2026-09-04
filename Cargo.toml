@@ -1,0 +1,20 @@
+[workspace]
+resolver = "2"
+members = [
+  "crates/ajar",
+  "crates/ajar-core",
+  "crates/ajar-helper",
+  "crates/ajar-hook",
+]
+
+[workspace.package]
+edition = "2021"
+license = "MIT"
+repository = "https://github.com/SocketDev/ajar"
+authors = ["Socket <opensource@socket.dev>"]
+
+[profile.release]
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
