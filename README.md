@@ -1,12 +1,12 @@
 # ajar
 
-<p align="center">Keep your machine awake - <em>lid closed</em> - while your AI agents work.<br>
-Cross-platform. Agent-aware. Explicit about what it can and can't do.</p>
+Keep your machine awake - *lid closed* - while your AI agents work.
+Cross-platform. Agent-aware. Explicit about what it can and can't do.
 
-<p align="center">
+<div align="center">
 <a href="https://twitter.com/SocketSecurity"><img src="https://img.shields.io/twitter/follow/SocketSecurity?style=social" alt="Follow @SocketSecurity" /></a>
 <a href="https://bsky.app/profile/socket.dev"><img src="https://img.shields.io/badge/Follow-@socket.dev-1DA1F2?style=social&logo=bluesky" alt="Follow @socket.dev on Bluesky" /></a>
-</p>
+</div>
 
 ---
 
@@ -99,7 +99,7 @@ so your machine can always sleep again.
 
 ## Architecture
 
-```
+```text
 ajar-core (Rust)          — decisions: agent state, guardrails, wake engine
   ├─ agent   — std-env agent signals + lifecycle-hook + process detection
   ├─ wake    — WakeController trait + macOS / Linux / Windows backends
@@ -123,7 +123,7 @@ the guardrails apply identically on every OS.
 - **M1b-2** - ping protocol + loopback socket server + `ajar-hook` (report command + Claude Code `settings.json` installer) ✅
 - **M2** - Linux (`logind`) + Windows (`powercfg`) wake backends + cross-platform CI ✅
 - **M3a** - `ajar run --json` bridge bin + macOS menu-bar shell (SwiftUI, socketeer theme): live status, keep-awake mode picker, working-agent list, IOKit battery/thermal forwarding ✅
-- **M3b** - settings tabs (General · Agents · Power & Display · Notifications) + SMAppService helper install + Windows (WinUI) / Linux (GTK) shells ← _next_
+- **M3b** - settings tabs (General · Agents · Power & Display · Notifications) + SMAppService helper install + Windows (WinUI) / Linux (GTK) shells ← *next*
 - **M4** - display-off control, notification chimes, global shortcut, auto-update
 
 ## Development
@@ -143,3 +143,11 @@ the menu-bar plumbing.
 ## License
 
 MIT © Socket
+
+<div align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/SocketDev/ajar/HEAD/assets/fleet/socket-combomark-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/SocketDev/ajar/HEAD/assets/fleet/socket-combomark-light.svg">
+    <img width="320" height="91" alt="Socket" src="https://raw.githubusercontent.com/SocketDev/ajar/HEAD/assets/fleet/socket-combomark-light.svg">
+  </picture>
+</div>
