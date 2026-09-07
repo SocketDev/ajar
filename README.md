@@ -1,6 +1,6 @@
 # ajar
 
-Keep your machine awake - *lid closed* - while your AI agents work.
+Keep your machine awake - _lid closed_ - while your AI agents work.
 Cross-platform. Agent-aware. Explicit about what it can and can't do.
 
 <div align="center">
@@ -123,7 +123,7 @@ the guardrails apply identically on every OS.
 - **M1b-2** - ping protocol + loopback socket server + `ajar-hook` (report command + Claude Code `settings.json` installer) ✅
 - **M2** - Linux (`logind`) + Windows (`powercfg`) wake backends + cross-platform CI ✅
 - **M3a** - `ajar run --json` bridge bin + macOS menu-bar shell (SwiftUI, socketeer theme): live status, keep-awake mode picker, working-agent list, IOKit battery/thermal forwarding ✅
-- **M3b** - settings tabs (General · Agents · Power & Display · Notifications) + SMAppService helper install + Windows (WinUI) / Linux (GTK) shells ← *next*
+- **M3b** - settings tabs (General · Agents · Power & Display · Notifications) + SMAppService helper install + Windows (WinUI) / Linux (GTK) shells ← _next_
 - **M4** - display-off control, notification chimes, global shortcut, auto-update
 
 ## Development
