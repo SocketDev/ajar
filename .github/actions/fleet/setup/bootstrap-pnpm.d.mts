@@ -17,9 +17,7 @@ export interface NpmDist {
   tarball: string
 }
 
-export declare function extractNpmDist(
-  manifest: unknown,
-): NpmDist | undefined
+export declare function extractNpmDist(manifest: unknown): NpmDist | undefined
 
 export type SemverTriple = readonly [number, number, number]
 
@@ -56,3 +54,7 @@ export declare function resolveHighestSatisfying(
   range: string | undefined,
   versions: readonly string[],
 ): string | undefined
+
+export declare function readPnpmDevEngine(
+  manifest: unknown,
+): { name: 'pnpm'; version: string } | undefined

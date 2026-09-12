@@ -3,27 +3,5 @@
   "extends": ["./tsconfig.check.base.json", "../repo/tsconfig.check.json"],
   "compilerOptions": {
     "rootDir": "../.."
-  },
-  "include": [
-    "../../scripts/**/*.mts",
-    "../../.claude/hooks/repo/**/*.mts",
-    "../../.claude/hooks/fleet/**/*.mts",
-    "../../.config/fleet/markdownlint-rules/**/*.mts",
-    "../../.config/fleet/oxlint-plugin/**/*.mts",
-    "../../.config/fleet/rolldown/**/*.mts",
-    "../../src/**/*.d.ts",
-    "../../src/**/*.d.mts",
-    "../../test/**/*.mts"
-  ],
-  "exclude": [
-    "../../.cache",
-    "../../build",
-    "../../coverage",
-    "../../dist",
-    "../../node_modules",
-    "../../scripts/fleet",
-    "../../template",
-    "**/_shared/**",
-    "**/node_modules"
-  ]
+  }
 }

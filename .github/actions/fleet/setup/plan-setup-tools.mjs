@@ -59,6 +59,7 @@
 // oxlint-disable-next-line socket/prefer-async-spawn -- sync jq probe
 import { spawnSync } from 'node:child_process'
 import { realpathSync } from 'node:fs'
+import os from 'node:os'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 
@@ -93,6 +94,28 @@ export function selectSfwFlavor(socketApiToken) {
     : { flavor: 'free', repo: 'SocketDev/sfw-free' }
 }
 
+export function resolveSfwPlatform({
+  platformKey,
+  windowsRelease,
+  nativeAvailable,
+}) {
+  if (nativeAvailable || platformKey !== 'win32-arm64') {
+    return platformKey
+  }
+  // Read the Windows major, minor, and build components before any revision suffix.
+  const version = /^(\d+)\.(\d+)\.(\d+)(?:\.|$)/.exec(windowsRelease)
+  if (
+    version &&
+    (Number(version[1]) > 10 ||
+      (Number(version[1]) === 10 && Number(version[3]) >= 22_000))
+  ) {
+    return 'win32-x64'
+  }
+  throw new Error(
+    `SFW has no native ${platformKey} asset and Windows ${windowsRelease} does not support the required Windows 11 x64 emulation. Use a Windows 11 ARM64 runner.`,
+  )
+}
+
 /**
  * The jq key path of the active flavor's entry — space-joined, expanded
  * unquoted at the call sites so the legacy two-word path splits.
@@ -121,6 +144,7 @@ export function resolveSfwSelection({ probe, socketApiToken, toolsFile }) {
   const shape = sfwShape(probe(toolsFile, [...nsKeys, 'sfw-free', 'version']))
   const { flavor, repo } = selectSfwFlavor(socketApiToken)
   return {
+    __proto__: null,
     entryPath: sfwEntryPath(shape, flavor),
     flavor,
     ns,
@@ -138,6 +162,7 @@ export function resolveSfwSelection({ probe, socketApiToken, toolsFile }) {
  */
 export function fallbackSfwSelection(shape) {
   return {
+    __proto__: null,
     entryPath: sfwEntryPath(shape, 'free'),
     flavor: 'free',
     repo: 'SocketDev/sfw-free',
@@ -294,6 +319,23 @@ function main() {
       printLines([s.ns, s.shape, s.flavor, s.repo, s.versionPath, s.entryPath])
       return 0
     }
+    case 'sfw-platform': {
+      const platformKey = env('PLATFORM_KEY')
+      const entry = [env('NS'), ...env('SFW_PATH').split(' ')].filter(Boolean)
+      printLines([
+        resolveSfwPlatform({
+          platformKey,
+          windowsRelease: os.release(),
+          nativeAvailable: defaultProbe(env('TOOLS_FILE'), [
+            ...entry,
+            'platforms',
+            platformKey,
+            'asset',
+          ]),
+        }),
+      ])
+      return 0
+    }
     case 'fallback-sfw': {
       const s = fallbackSfwSelection(env('SFW_SHAPE'))
       printLines([s.flavor, s.repo, s.versionPath, s.entryPath])
@@ -351,7 +393,7 @@ function main() {
 }
 
 // Realpath both sides — the naive argv[1] comparison is symlink-fragile, the
-// same pitfall scripts/fleet/_shared/is-main-module.mts documents; that
+// same pitfall scripts/fleet/process/is-main-module.mts documents; that
 // helper is .mts and this script must stay importless-runnable on system
 // Node, so the comparison is inlined.
 function isEntrypoint(invokedPath) {
