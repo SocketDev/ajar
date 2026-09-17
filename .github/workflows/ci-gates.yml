@@ -1,7 +1,7 @@
 # ajar CI — build/test/lint the shared Rust core on all three target OSes, so
 # the Linux (logind) and Windows (powercfg) wake backends are verified on real
 # runners (they're cfg-gated and can't be checked from a macOS dev box).
-name: ⚡ CI
+name: "ci: gates"
 
 on:
   push:
