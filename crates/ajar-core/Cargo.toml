@@ -1,5 +1,6 @@
 [package]
 name = "ajar-core"
+publish = false
 version = "0.0.0"
 description = "Keep your machine awake — lid closed — while your AI agents work. The cross-platform wake-lock + agent-awareness core behind ajar."
 edition.workspace = true

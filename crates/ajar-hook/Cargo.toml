@@ -1,5 +1,6 @@
 [package]
 name = "ajar-hook"
+publish = false
 version = "0.0.0"
 description = "ajar lifecycle-hook command + installer: reports per-session agent Working/Idle and wires the hooks into an agent's config."
 edition.workspace = true

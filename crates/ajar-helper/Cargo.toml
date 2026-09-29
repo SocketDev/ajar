@@ -1,5 +1,6 @@
 [package]
 name = "ajar-helper"
+publish = false
 version = "0.0.0"
 description = "Privileged lid-closed-hold helper for ajar (macOS): flips `pmset disablesleep` as a heartbeat-leased hold that always releases on crash."
 edition.workspace = true
