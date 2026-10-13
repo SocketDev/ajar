@@ -50,7 +50,7 @@ ajar status                    # what is held right now, and why
 ajar-hook install              # add the reporter to Claude Code settings
 ```
 
-## What it does
+### What it does
 
 - ✅ **Agent-aware** - knows when your agents are working vs. idle
 - ✅ **Auto-sleeps** when agents go idle (no more all-night wake-for-nothing)
@@ -72,7 +72,7 @@ So if you have three Claude Code sessions open - two working, one idle - `ajar`
 holds the wake lock for the two that are working and releases it the moment the
 last one finishes. A blunt keep-awake tool would stay on until you quit all three.
 
-## Cross-platform - the whole point
+### Cross-platform - the whole point
 
 | Capability                           | macOS       | Linux      | Windows    |
 | ------------------------------------ | ----------- | ---------- | ---------- |
@@ -92,7 +92,7 @@ every tool in this space uses, and tells you plainly when it can't guarantee
 staying awake rather than overselling. On Linux (`logind` inhibitors) and
 Windows (power-scheme lid action) the lid-closed hold is complete.
 
-## How the wake lock works
+### How the wake lock works
 
 The hold is a **lease, never a latch** - a per-OS mechanism engaged only while an
 agent is working, and auto-released if `ajar` crashes, quits, or stops renewing,
@@ -104,7 +104,7 @@ so your machine can always sleep again.
 - **Windows** - `SetThreadExecutionState` for idle; the active power scheme's
   lid-close action is set to "do nothing" while agents run, then restored.
 
-## Architecture
+### Architecture
 
 ```text
 ajar-core (Rust)          — decisions: agent state, guardrails, wake engine
@@ -122,7 +122,7 @@ as a subprocess (`ajar run --json`) - reading its status stream and forwarding
 the platform battery / thermal / power state it reads back down as commands, so
 the guardrails apply identically on every OS.
 
-## Roadmap
+### Roadmap
 
 - **M0** - core: agent detection, wake trait + macOS idle hold, guard + engine ✅
 - **M1a** - macOS privileged helper: `pmset disablesleep` as a heartbeat lease (lid-closed hold) + self-renewing `PmsetHelper` backend ✅
