@@ -29,6 +29,13 @@ open macos/AjarMenuBar/AjarMenuBar.xcodeproj   # the macOS menu-bar shell
 
 ## Usage
 
+### Documentation
+
+- [User guide](docs/guide.md): setup, wake behavior, agent tracking, guardrails,
+  platform limits, and troubleshooting.
+- [Command reference](docs/commands.md): CLI, hook installer, and native shell
+  workflows.
+
 Run the daemon and let it watch for working agents:
 
 ```sh
